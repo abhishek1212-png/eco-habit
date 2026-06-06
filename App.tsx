@@ -883,33 +883,6 @@ export default function App() {
             <Text style={styles.treeStatus}>Tree stage: {treeStage}</Text>
           </View>
 
-          {/* ── Add Custom Deed ── */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <TextInput
-              style={[styles.input, { flex: 1, marginRight: 8 }]}
-              placeholder="Emoji (e.g. 🌿)"
-              value={newDeedEmoji}
-              onChangeText={setNewDeedEmoji}
-            />
-            <TextInput
-              style={[styles.input, { flex: 2, marginRight: 8 }]}
-              placeholder="New eco deed!"
-              value={newDeedLabel}
-              onChangeText={setNewDeedLabel}
-            />
-            <TouchableOpacity
-              style={[styles.addButton, { paddingHorizontal: 12 }]}
-              onPress={() => {
-                if (!newDeedLabel.trim()) { alert('Please enter a deed label'); return; }
-                const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-                setCustomDeeds((d) => [...d, { id, label: newDeedLabel.trim(), emoji: newDeedEmoji || '✅' }]);
-                setNewDeedLabel('');
-                setNewDeedEmoji('');
-              }}
-            >
-              <Text style={styles.addButtonText}>Add deed</Text>
-            </TouchableOpacity>
-          </View>
 
           {/* ── World Clock ── */}
           <View style={styles.card}>
@@ -993,6 +966,35 @@ export default function App() {
                 </View>
               </View>
             )}
+            {/* Add custom deed inline */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginRight: 6 }]}
+                placeholder="🌿 Emoji"
+                value={newDeedEmoji}
+                onChangeText={setNewDeedEmoji}
+              />
+              <TextInput
+                style={[styles.input, { flex: 3, marginRight: 6 }]}
+                placeholder="Add your own deed..."
+                value={newDeedLabel}
+                onChangeText={setNewDeedLabel}
+              />
+              <TouchableOpacity
+                style={[styles.addButton, { paddingHorizontal: 10 }]}
+                onPress={() => {
+                  if (!newDeedLabel.trim()) { alert('Enter a deed name'); return; }
+                  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                  const newDeed = { id, label: newDeedLabel.trim(), emoji: newDeedEmoji || '✅' };
+                  setCustomDeeds((d) => [...d, newDeed]);
+                  setSelectedDeed(id);
+                  setNewDeedLabel('');
+                  setNewDeedEmoji('');
+                }}
+              >
+                <Text style={styles.addButtonText}>+ Add</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={{ color: '#547a56', marginBottom: 8 }}>Choose one deed above; no custom text required.</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               <TextInput
