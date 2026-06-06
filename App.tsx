@@ -147,6 +147,76 @@ const treeStyles = StyleSheet.create({
   treeLabel:  { color: '#0b8457', fontWeight: '800', marginTop: 10, fontSize: 14 },
 });
 
+// ─── Confetti Component ───────────────────────────────────────────────────────
+
+const CONFETTI_COLORS = ['#4ade80','#22c55e','#facc15','#fb923c','#60a5fa','#f472b6','#a78bfa','#34d399'];
+const PARTICLE_COUNT = 80;
+
+function ConfettiEffect({ trigger }: { trigger: number }) {
+  const particles = useRef(
+    Array.from({ length: PARTICLE_COUNT }, () => ({
+      x: new Animated.Value(0),
+      y: new Animated.Value(0),
+      opacity: new Animated.Value(0),
+      rotate: new Animated.Value(0),
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      startX: Math.random() * 400 - 200,
+      endX: Math.random() * 600 - 300,
+      size: Math.random() * 8 + 5,
+      delay: Math.random() * 300,
+    }))
+  ).current;
+
+  const { width } = useWindowDimensions();
+
+  useEffect(() => {
+    if (trigger === 0) return;
+    particles.forEach((p) => {
+      p.x.setValue(0);
+      p.y.setValue(0);
+      p.opacity.setValue(0);
+      p.rotate.setValue(0);
+
+      Animated.sequence([
+        Animated.delay(p.delay),
+        Animated.parallel([
+          Animated.timing(p.opacity, { toValue: 1, duration: 100, useNativeDriver: true }),
+          Animated.timing(p.x, { toValue: p.endX, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(p.y, { toValue: 700, duration: 1800, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.timing(p.rotate, { toValue: Math.random() > 0.5 ? 6 : -6, duration: 1800, useNativeDriver: true }),
+        ]),
+        Animated.timing(p.opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start();
+    });
+  }, [trigger]);
+
+  if (trigger === 0) return null;
+
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}>
+      {particles.map((p, i) => {
+        const spin = p.rotate.interpolate({ inputRange: [-6, 6], outputRange: ['-720deg', '720deg'] });
+        return (
+          <Animated.View
+            key={i}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: width / 2,
+              width: p.size,
+              height: p.size * 0.6,
+              backgroundColor: p.color,
+              borderRadius: 2,
+              opacity: p.opacity,
+              transform: [{ translateX: p.x }, { translateY: p.y }, { rotate: spin }],
+            }}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
 // ─── Earth Mascot Component ───────────────────────────────────────────────────
 
 function EarthMascot() {
@@ -337,6 +407,7 @@ export default function App() {
   const [xp, setXp] = useState(0);
   const [now, setNow] = useState(new Date());
   const confettiRef = useRef<any>(null);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   // ── Auth state ────────────────────────────────────────────────────────────────
   const [loggedIn, setLoggedIn] = useState(false);
@@ -656,7 +727,11 @@ export default function App() {
     if (willComplete) {
       cancelForHabit(id);
       setXp((v) => Math.max(0, v + XP_PER));
-      confettiRef.current?.start();
+      if (Platform.OS === 'web') {
+        setConfettiTrigger((t) => t + 1);
+      } else {
+        confettiRef.current?.start();
+      }
 
       // Per-habit streak
       const today = todayStr();
@@ -1082,16 +1157,19 @@ export default function App() {
 
         </ScrollView>
 
-        <ConfettiCannon
-          ref={confettiRef}
-          count={120}
-          origin={{ x: -10, y: 0 }}
-          autoStart={false}
-          fadeOut
-          fallSpeed={2500}
-          explosionSpeed={350}
-          colors={['#4ade80', '#22c55e', '#16a34a', '#facc15', '#fb923c', '#60a5fa', '#f472b6']}
-        />
+        {Platform.OS !== 'web' && (
+          <ConfettiCannon
+            ref={confettiRef}
+            count={120}
+            origin={{ x: -10, y: 0 }}
+            autoStart={false}
+            fadeOut
+            fallSpeed={2500}
+            explosionSpeed={350}
+            colors={['#4ade80', '#22c55e', '#16a34a', '#facc15', '#fb923c', '#60a5fa', '#f472b6']}
+          />
+        )}
+        <ConfettiEffect trigger={confettiTrigger} />
       </LinearGradient>
     </SafeAreaView>
   );
