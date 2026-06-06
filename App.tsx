@@ -451,7 +451,7 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const [habitsStr, xpStr, notifStr, storedCreds, streakStr, lastDateStr] =
+        const [habitsStr, xpStr, notifStr, storedCreds, streakStr, lastDateStr, customDeedsStr] =
           await Promise.all([
             AsyncStorage.getItem('eco_habits'),
             AsyncStorage.getItem('eco_xp'),
@@ -459,10 +459,12 @@ export default function App() {
             AsyncStorage.getItem('eco_user_credentials'),
             AsyncStorage.getItem('eco_global_streak'),
             AsyncStorage.getItem('eco_last_activity_date'),
+            AsyncStorage.getItem('eco_custom_deeds'),
           ]);
 
         if (habitsStr) setHabits(JSON.parse(habitsStr));
         if (xpStr) setXp(parseInt(xpStr, 10));
+        if (customDeedsStr) { try { setCustomDeeds(JSON.parse(customDeedsStr)); } catch {} }
         if (notifStr) { try { setNotifMap(JSON.parse(notifStr)); } catch {} }
         if (storedCreds) {
           try {
@@ -509,6 +511,7 @@ export default function App() {
           AsyncStorage.setItem('eco_notifs', JSON.stringify(notifMap)),
           AsyncStorage.setItem('eco_global_streak', String(globalStreak)),
           AsyncStorage.setItem('eco_last_activity_date', lastActivityDate ?? ''),
+          AsyncStorage.setItem('eco_custom_deeds', JSON.stringify(customDeeds)),
         ]);
       } catch (err) {
         console.log('Failed to save to AsyncStorage', err);
@@ -535,7 +538,7 @@ export default function App() {
   useEffect(() => {
     if (!firebaseUser) return;
     saveRemoteUserData(firebaseUser.uid);
-  }, [habits, xp, notifMap, globalStreak, lastActivityDate, firebaseUser]);
+  }, [habits, xp, notifMap, globalStreak, lastActivityDate, firebaseUser, customDeeds]);
 
   useEffect(() => {
     if (!Notifications) return;
@@ -562,12 +565,14 @@ export default function App() {
           notifMap?: Record<string, string>;
           globalStreak?: number;
           lastActivityDate?: string;
+          customDeeds?: Array<{ id: string; label: string; emoji: string }>;
         };
         if (remote.habits) setHabits(remote.habits);
-        if (typeof remote.xp === 'number') setXp(remote.xp);
+        if (typeof remote.xp === 'number') setXp((local) => Math.max(local, remote.xp!));
         if (remote.notifMap) setNotifMap(remote.notifMap);
-        if (typeof remote.globalStreak === 'number') setGlobalStreak(remote.globalStreak);
+        if (typeof remote.globalStreak === 'number') setGlobalStreak((local) => Math.max(local, remote.globalStreak!));
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
+        if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
       } else {
         await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate });
       }
@@ -579,7 +584,7 @@ export default function App() {
   const saveRemoteUserData = async (uid: string) => {
     try {
       const userDoc = doc(db, 'eco_users', uid);
-      await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate }, { merge: true });
+      await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate, customDeeds }, { merge: true });
     } catch (err) {
       console.log('Failed to save remote user data', err);
     }
