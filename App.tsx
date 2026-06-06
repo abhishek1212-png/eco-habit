@@ -150,65 +150,76 @@ const treeStyles = StyleSheet.create({
 // ─── Confetti Component ───────────────────────────────────────────────────────
 
 const CONFETTI_COLORS = ['#4ade80','#22c55e','#facc15','#fb923c','#60a5fa','#f472b6','#a78bfa','#34d399'];
-const PARTICLE_COUNT = 80;
+
+type Particle = {
+  anim: Animated.Value;
+  x: number;
+  endY: number;
+  endX: number;
+  color: string;
+  size: number;
+  rot: number;
+  delay: number;
+};
 
 function ConfettiEffect({ trigger }: { trigger: number }) {
-  const particles = useRef(
-    Array.from({ length: PARTICLE_COUNT }, () => ({
-      x: new Animated.Value(0),
-      y: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-      rotate: new Animated.Value(0),
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      startX: Math.random() * 400 - 200,
-      endX: Math.random() * 600 - 300,
-      size: Math.random() * 8 + 5,
-      delay: Math.random() * 300,
-    }))
-  ).current;
-
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
     if (trigger === 0) return;
-    particles.forEach((p) => {
-      p.x.setValue(0);
-      p.y.setValue(0);
-      p.opacity.setValue(0);
-      p.rotate.setValue(0);
 
+    const newParticles: Particle[] = Array.from({ length: 90 }, () => ({
+      anim: new Animated.Value(0),
+      x: Math.random() * width,
+      endY: height + 50,
+      endX: (Math.random() - 0.5) * 300,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      size: Math.random() * 9 + 5,
+      rot: (Math.random() - 0.5) * 720,
+      delay: Math.random() * 400,
+    }));
+
+    setParticles(newParticles);
+
+    newParticles.forEach((p) => {
       Animated.sequence([
         Animated.delay(p.delay),
-        Animated.parallel([
-          Animated.timing(p.opacity, { toValue: 1, duration: 100, useNativeDriver: true }),
-          Animated.timing(p.x, { toValue: p.endX, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(p.y, { toValue: 700, duration: 1800, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-          Animated.timing(p.rotate, { toValue: Math.random() > 0.5 ? 6 : -6, duration: 1800, useNativeDriver: true }),
-        ]),
-        Animated.timing(p.opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(p.anim, {
+          toValue: 1,
+          duration: 1800,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
       ]).start();
     });
+
+    const timer = setTimeout(() => setParticles([]), 2500);
+    return () => clearTimeout(timer);
   }, [trigger]);
 
-  if (trigger === 0) return null;
+  if (particles.length === 0) return null;
 
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}>
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height, zIndex: 9999 }}>
       {particles.map((p, i) => {
-        const spin = p.rotate.interpolate({ inputRange: [-6, 6], outputRange: ['-720deg', '720deg'] });
+        const translateY = p.anim.interpolate({ inputRange: [0, 1], outputRange: [-20, p.endY] });
+        const translateX = p.anim.interpolate({ inputRange: [0, 1], outputRange: [0, p.endX] });
+        const opacity    = p.anim.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] });
+        const rotate     = p.anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${p.rot}deg`] });
         return (
           <Animated.View
             key={i}
             style={{
               position: 'absolute',
               top: 0,
-              left: width / 2,
+              left: p.x,
               width: p.size,
-              height: p.size * 0.6,
+              height: p.size * 0.55,
               backgroundColor: p.color,
               borderRadius: 2,
-              opacity: p.opacity,
-              transform: [{ translateX: p.x }, { translateY: p.y }, { rotate: spin }],
+              transform: [{ translateY }, { translateX }, { rotate }],
+              opacity,
             }}
           />
         );
