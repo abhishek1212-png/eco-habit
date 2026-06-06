@@ -147,85 +147,34 @@ const treeStyles = StyleSheet.create({
   treeLabel:  { color: '#0b8457', fontWeight: '800', marginTop: 10, fontSize: 14 },
 });
 
-// ─── Confetti Component ───────────────────────────────────────────────────────
+// ─── Web Confetti via canvas-confetti CDN ─────────────────────────────────────
 
-const CONFETTI_COLORS = ['#4ade80','#22c55e','#facc15','#fb923c','#60a5fa','#f472b6','#a78bfa','#34d399'];
-
-type Particle = {
-  anim: Animated.Value;
-  x: number;
-  endY: number;
-  endX: number;
-  color: string;
-  size: number;
-  rot: number;
-  delay: number;
-};
-
-function ConfettiEffect({ trigger }: { trigger: number }) {
-  const { width, height } = useWindowDimensions();
-  const [particles, setParticles] = useState<Particle[]>([]);
-
-  useEffect(() => {
-    if (trigger === 0) return;
-
-    const newParticles: Particle[] = Array.from({ length: 90 }, () => ({
-      anim: new Animated.Value(0),
-      x: Math.random() * width,
-      endY: height + 50,
-      endX: (Math.random() - 0.5) * 300,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      size: Math.random() * 9 + 5,
-      rot: (Math.random() - 0.5) * 720,
-      delay: Math.random() * 400,
-    }));
-
-    setParticles(newParticles);
-
-    newParticles.forEach((p) => {
-      Animated.sequence([
-        Animated.delay(p.delay),
-        Animated.timing(p.anim, {
-          toValue: 1,
-          duration: 1800,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-
-    const timer = setTimeout(() => setParticles([]), 2500);
-    return () => clearTimeout(timer);
-  }, [trigger]);
-
-  if (particles.length === 0) return null;
-
-  return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height, zIndex: 9999 }}>
-      {particles.map((p, i) => {
-        const translateY = p.anim.interpolate({ inputRange: [0, 1], outputRange: [-20, p.endY] });
-        const translateX = p.anim.interpolate({ inputRange: [0, 1], outputRange: [0, p.endX] });
-        const opacity    = p.anim.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] });
-        const rotate     = p.anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${p.rot}deg`] });
-        return (
-          <Animated.View
-            key={i}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: p.x,
-              width: p.size,
-              height: p.size * 0.55,
-              backgroundColor: p.color,
-              borderRadius: 2,
-              transform: [{ translateY }, { translateX }, { rotate }],
-              opacity,
-            }}
-          />
-        );
-      })}
-    </View>
-  );
+function fireWebConfetti() {
+  if (Platform.OS !== 'web') return;
+  try {
+    const win = window as any;
+    if (win.confetti) {
+      win.confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4ade80','#22c55e','#facc15','#fb923c','#60a5fa','#f472b6','#a78bfa'],
+      });
+      return;
+    }
+    // Load script if not already loaded
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js';
+    script.onload = () => {
+      (window as any).confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4ade80','#22c55e','#facc15','#fb923c','#60a5fa','#f472b6','#a78bfa'],
+      });
+    };
+    document.head.appendChild(script);
+  } catch {}
 }
 
 // ─── Earth Mascot Component ───────────────────────────────────────────────────
@@ -418,7 +367,6 @@ export default function App() {
   const [xp, setXp] = useState(0);
   const [now, setNow] = useState(new Date());
   const confettiRef = useRef<any>(null);
-  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   // ── Auth state ────────────────────────────────────────────────────────────────
   const [loggedIn, setLoggedIn] = useState(false);
@@ -739,7 +687,7 @@ export default function App() {
       cancelForHabit(id);
       setXp((v) => Math.max(0, v + XP_PER));
       if (Platform.OS === 'web') {
-        setConfettiTrigger((t) => t + 1);
+        fireWebConfetti();
       } else {
         confettiRef.current?.start();
       }
@@ -1180,7 +1128,6 @@ export default function App() {
             colors={['#4ade80', '#22c55e', '#16a34a', '#facc15', '#fb923c', '#60a5fa', '#f472b6']}
           />
         )}
-        <ConfettiEffect trigger={confettiTrigger} />
       </LinearGradient>
     </SafeAreaView>
   );
