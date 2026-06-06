@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Eco Habit",
+    "slug": "eco-habit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d3b2e"
+    },
+
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourname.ecohabit",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "Eco Habit uses notifications to remind you of your scheduled eco-friendly habits.",
+        "CFBundleDisplayName": "Eco Habit",
+        "LSApplicationQueriesSchemes": []
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+
+    "android": {
+      "package": "com.yourname.ecohabit",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d3b2e"
+      },
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "INTERNET"
+      ],
+      "edgeToEdgeEnabled": true
+    },
+
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0d3b2e",
+          "sounds": []
+        }
+      ]
+    ],
+
+    "extra": {
+      "eas": {
+        "projectId": "replace-with-your-eas-project-id"
+      }
+    }
+  }
+}
