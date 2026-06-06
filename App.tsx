@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,9 @@ try {
   Notifications = null;
 }
 import {
+  Animated,
   Button,
+  Easing,
   FlatList,
   SafeAreaView,
   ScrollView,
@@ -143,6 +145,117 @@ const treeStyles = StyleSheet.create({
   canopyTier: { zIndex: 1 },
   trunk:      { backgroundColor: '#92400e', borderBottomLeftRadius: 4, borderBottomRightRadius: 4 },
   treeLabel:  { color: '#0b8457', fontWeight: '800', marginTop: 10, fontSize: 14 },
+});
+
+// ─── Earth Mascot Component ───────────────────────────────────────────────────
+
+function EarthMascot() {
+  const bounce = useRef(new Animated.Value(0)).current;
+  const armL   = useRef(new Animated.Value(0)).current;
+  const armR   = useRef(new Animated.Value(0)).current;
+  const legL   = useRef(new Animated.Value(0)).current;
+  const legR   = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = (anim: Animated.Value, toValue: number, duration: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue, duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0,      duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ])
+      );
+
+    const b  = loop(bounce, -22, 350);
+    const al = loop(armL,    1,  280);
+    const ar = loop(armR,   -1,  280);
+    const ll = loop(legL,    1,  280);
+    const lr = loop(legR,   -1,  280);
+
+    b.start(); al.start(); ar.start(); ll.start(); lr.start();
+    return () => { b.stop(); al.stop(); ar.stop(); ll.stop(); lr.stop(); };
+  }, []);
+
+  const armLRot = armL.interpolate({ inputRange: [0, 1], outputRange: ['-25deg', '45deg'] });
+  const armRRot = armR.interpolate({ inputRange: [-1, 0], outputRange: ['45deg', '-25deg'] });
+  const legLRot = legL.interpolate({ inputRange: [0, 1], outputRange: ['-20deg', '20deg'] });
+  const legRRot = legR.interpolate({ inputRange: [-1, 0], outputRange: ['20deg', '-20deg'] });
+
+  return (
+    <View style={earthStyles.scene}>
+      <Animated.View style={[earthStyles.characterWrap, { transform: [{ translateY: bounce }] }]}>
+        {/* Body row: left arm + globe + right arm */}
+        <View style={earthStyles.bodyRow}>
+          {/* Left arm */}
+          <Animated.View style={[earthStyles.arm, earthStyles.armLeft, { transform: [{ rotate: armLRot }] }]} />
+
+          {/* Globe body */}
+          <View style={earthStyles.globe}>
+            {/* Continents */}
+            <View style={[earthStyles.continent, { width: 30, height: 26, top: 16, left: 10, transform: [{ rotate: '-20deg' }], borderRadius: 14 }]} />
+            <View style={[earthStyles.continent, { width: 22, height: 32, top: 8,  left: 44, transform: [{ rotate: '10deg'  }], borderRadius: 12 }]} />
+            <View style={[earthStyles.continent, { width: 36, height: 20, top: 48, left: 28, transform: [{ rotate: '-10deg' }], borderRadius: 10 }]} />
+            <View style={[earthStyles.continent, { width: 16, height: 22, top: 60, left: 68, transform: [{ rotate: '15deg'  }], borderRadius: 9  }]} />
+            {/* Eyes */}
+            <View style={earthStyles.face}>
+              <View style={earthStyles.eyeRow}>
+                <View style={earthStyles.eye}><View style={earthStyles.pupil} /></View>
+                <View style={earthStyles.eye}><View style={earthStyles.pupil} /></View>
+              </View>
+              {/* Blush */}
+              <View style={earthStyles.blushRow}>
+                <View style={earthStyles.blush} />
+                <View style={{ width: 28 }} />
+                <View style={earthStyles.blush} />
+              </View>
+              {/* Smile */}
+              <View style={earthStyles.smile} />
+            </View>
+          </View>
+
+          {/* Right arm */}
+          <Animated.View style={[earthStyles.arm, earthStyles.armRight, { transform: [{ rotate: armRRot }] }]} />
+        </View>
+
+        {/* Legs */}
+        <View style={earthStyles.legRow}>
+          <View style={earthStyles.legWrap}>
+            <Animated.View style={[earthStyles.leg, { transform: [{ rotate: legLRot }] }]} />
+            <View style={earthStyles.foot} />
+          </View>
+          <View style={earthStyles.legWrap}>
+            <Animated.View style={[earthStyles.leg, { transform: [{ rotate: legRRot }] }]} />
+            <View style={earthStyles.foot} />
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Shadow */}
+      <View style={earthStyles.shadow} />
+    </View>
+  );
+}
+
+const earthStyles = StyleSheet.create({
+  scene:         { alignItems: 'center', paddingVertical: 8 },
+  characterWrap: { alignItems: 'center' },
+  bodyRow:       { flexDirection: 'row', alignItems: 'flex-end' },
+  arm:           { width: 14, height: 46, backgroundColor: '#4CAF7D', borderRadius: 10 },
+  armLeft:       { marginRight: -5, borderRadius: 10, transformOrigin: 'top center' } as any,
+  armRight:      { marginLeft: -5,  borderRadius: 10, transformOrigin: 'top center' } as any,
+  globe:         { width: 100, height: 100, borderRadius: 50, backgroundColor: '#2196A8', borderWidth: 3, borderColor: '#1a7a85', overflow: 'hidden', position: 'relative' },
+  continent:     { position: 'absolute', backgroundColor: '#4CAF7D' },
+  face:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  eyeRow:        { flexDirection: 'row', gap: 16, marginBottom: 6 },
+  eye:           { width: 16, height: 18, backgroundColor: 'white', borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  pupil:         { width: 9, height: 10, backgroundColor: '#1a1a2e', borderRadius: 5 },
+  blushRow:      { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+  blush:         { width: 12, height: 7, backgroundColor: 'rgba(255,120,120,0.5)', borderRadius: 6 },
+  smile:         { width: 26, height: 12, borderBottomWidth: 3, borderLeftWidth: 3, borderRightWidth: 3, borderColor: 'white', borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  legRow:        { flexDirection: 'row', gap: 10, marginTop: -3 },
+  legWrap:       { alignItems: 'center' },
+  leg:           { width: 18, height: 42, backgroundColor: '#2196A8', borderRadius: 9, borderWidth: 3, borderColor: '#1a7a85' },
+  foot:          { width: 24, height: 12, backgroundColor: '#1a7a85', borderRadius: 7, marginTop: -3 },
+  shadow:        { width: 70, height: 12, backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: 35, marginTop: 6 },
 });
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
@@ -636,11 +749,7 @@ export default function App() {
           <StatusBar style="light" />
           <View style={styles.loginContainer}>
             <Text style={styles.loginTitle}>Welcome to Eco Habit</Text>
-            <View style={styles.loginEmojiRow}>
-              {['🌿', '♻️', '💧', '🌎', '🌱'].map((e) => (
-                <Text key={e} style={styles.loginEmoji}>{e}</Text>
-              ))}
-            </View>
+            <EarthMascot />
             <Text style={styles.loginNotice}>
               Use your email and password to sign in. The first login creates a secure account.
             </Text>
