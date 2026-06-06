@@ -1084,9 +1084,13 @@ export default function App() {
 
         <ConfettiCannon
           ref={confettiRef}
-          count={100}
+          count={120}
           origin={{ x: -10, y: 0 }}
           autoStart={false}
+          fadeOut
+          fallSpeed={2500}
+          explosionSpeed={350}
+          colors={['#4ade80', '#22c55e', '#16a34a', '#facc15', '#fb923c', '#60a5fa', '#f472b6']}
         />
       </LinearGradient>
     </SafeAreaView>
