@@ -322,7 +322,8 @@ const DEFAULT_DEED_CATEGORIES: { id: string; name: string; deeds: Array<{ id: st
 export default function App() {
   // ── Deed / category state (must be declared before useMemos that reference them) ──
   const [deedCategories] = useState(DEFAULT_DEED_CATEGORIES);
-  const [deeds, setDeeds] = useState(DEFAULT_DEED_CATEGORIES.flatMap((c) => c.deeds));
+  const [customDeeds, setCustomDeeds] = useState<Array<{ id: string; label: string; emoji: string }>>([]);
+  const deeds = [...DEFAULT_DEED_CATEGORIES.flatMap((c) => c.deeds), ...customDeeds];
   const [newDeedLabel, setNewDeedLabel] = useState('');
   const [newDeedEmoji, setNewDeedEmoji] = useState('');
 
@@ -335,7 +336,7 @@ export default function App() {
   const [notifMap, setNotifMap] = useState<Record<string, string>>({});
   const [xp, setXp] = useState(0);
   const [now, setNow] = useState(new Date());
-  const [confettiRef, setConfettiRef] = useState<any>(null);
+  const confettiRef = useRef<any>(null);
 
   // ── Auth state ────────────────────────────────────────────────────────────────
   const [loggedIn, setLoggedIn] = useState(false);
@@ -650,7 +651,7 @@ export default function App() {
     if (willComplete) {
       cancelForHabit(id);
       setXp((v) => Math.max(0, v + XP_PER));
-      confettiRef?.start();
+      confettiRef.current?.start();
 
       // Per-habit streak
       const today = todayStr();
@@ -896,7 +897,7 @@ export default function App() {
               onPress={() => {
                 if (!newDeedLabel.trim()) { alert('Please enter a deed label'); return; }
                 const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-                setDeeds((d) => [...d, { id, label: newDeedLabel.trim(), emoji: newDeedEmoji || '✅' }]);
+                setCustomDeeds((d) => [...d, { id, label: newDeedLabel.trim(), emoji: newDeedEmoji || '✅' }]);
                 setNewDeedLabel('');
                 setNewDeedEmoji('');
               }}
@@ -967,6 +968,26 @@ export default function App() {
                 </View>
               </View>
             ))}
+            {customDeeds.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={styles.categoryHeader}>My Custom Deeds</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {customDeeds.map((d) => {
+                    const active = selectedDeed === d.id;
+                    return (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={[styles.deedItem, active && styles.deedItemActive, { width: isTablet ? '30%' : '48%' }]}
+                        onPress={() => setSelectedDeed(d.id)}
+                      >
+                        <Text style={styles.deedEmoji}>{d.emoji}</Text>
+                        <Text style={styles.deedLabel}>{d.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
             <Text style={{ color: '#547a56', marginBottom: 8 }}>Choose one deed above; no custom text required.</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               <TextInput
@@ -1055,7 +1076,7 @@ export default function App() {
         </ScrollView>
 
         <ConfettiCannon
-          ref={(ref) => setConfettiRef(ref)}
+          ref={confettiRef}
           count={100}
           origin={{ x: -10, y: 0 }}
           autoStart={false}
