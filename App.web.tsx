@@ -587,9 +587,9 @@ export default function App() {
               {/* Add Reminder */}
               <View style={[ws.card,{backgroundColor:'#dcfce7'}]}>
                 <Text style={ws.section}>Add reminder</Text>
-                <Text style={{color:'#547a56',marginBottom:8,fontSize:13}}>
+                <Text style={{color:'#547a56',marginBottom:8,fontSize:13,fontWeight:'700'}}>
                   Choose a deed below, then set a time. ⏰{'\n'}
-                  <Text style={{color:'#ff9f1c',fontWeight:'700'}}>Tip: press Auto if due tomorrow.</Text>
+                  <Text style={{color:'#ff9f1c',fontWeight:'800'}}>Tip: press Auto if due tomorrow.</Text>
                 </Text>
                 <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between'}}>
                   {deedCategories.map(category=>{
