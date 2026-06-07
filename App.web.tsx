@@ -587,18 +587,19 @@ export default function App() {
                     const cc = CAT_COLORS[category.id]??CAT_COLORS.general;
                     return (
                       <View key={category.id} style={{width:'49%',marginBottom:14}}>
-                        <View style={{backgroundColor:cc.pill,borderRadius:8,paddingHorizontal:8,paddingVertical:4,marginBottom:6,alignSelf:'flex-start'}}>
-                          <Text style={{color:'#fff',fontWeight:'800',fontSize:12}}>{category.name}</Text>
+                        <View style={{backgroundColor:'#ff9f1c',borderRadius:8,paddingHorizontal:10,paddingVertical:5,marginBottom:8,alignSelf:'flex-start'}}>
+                          <Text style={{color:'#fff',fontWeight:'800',fontSize:11,textTransform:'uppercase',letterSpacing:0.8}}>{category.name}</Text>
                         </View>
                         {category.deeds.map(d=>{
                           const active = selectedDeed===d.id;
                           return (
                             <TouchableOpacity key={d.id}
-                              style={{paddingVertical:7,paddingHorizontal:8,borderRadius:10,marginBottom:5,flexDirection:'row',alignItems:'center',
-                                backgroundColor:active?cc.activeBg:cc.bg,borderLeftWidth:3,borderLeftColor:active?cc.text:cc.border,minHeight:38}}
+                              style={{paddingVertical:9,paddingHorizontal:10,borderRadius:14,marginBottom:6,flexDirection:'row',alignItems:'center',
+                                backgroundColor:active?'#022c22':'#f3e8ff',
+                                borderWidth:2,borderColor:active?'#4ade80':'#c084fc',minHeight:44}}
                               onPress={()=>setSelectedDeed(d.id)}>
-                              <Text style={{marginRight:6,fontSize:16}}>{d.emoji}</Text>
-                              <Text style={{fontWeight:'700',fontSize:12,color:cc.text,flexShrink:1,lineHeight:16}}>{d.label}</Text>
+                              <Text style={{marginRight:6,fontSize:15,flexShrink:0}}>{d.emoji}</Text>
+                              <Text style={{fontWeight:'800',fontSize:12,color:active?'#4ade80':'#6b21a8',flexShrink:1,lineHeight:16}}>{d.label}</Text>
                             </TouchableOpacity>
                           );
                         })}
