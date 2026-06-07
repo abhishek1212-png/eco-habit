@@ -470,9 +470,9 @@ export default function App() {
 
   // ── Main Screen ───────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={{flex:1,backgroundColor:'#011a12'}}>
+    <SafeAreaView style={{flex:1,backgroundColor:'#011a12',minHeight:'100vh' as any}}>
       <StatusBar style="light"/>
-      <ScrollView style={{flex:1}}>
+      <ScrollView style={{flex:1,minHeight:'100vh' as any}}>
 
         {/* ── Hero Header ── */}
         <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{paddingTop:18,paddingBottom:26,paddingHorizontal:isWide?40:20,borderBottomLeftRadius:28,borderBottomRightRadius:28,marginBottom:4}} start={[0,0]} end={[1,1]}>
@@ -502,7 +502,7 @@ export default function App() {
             </View>
           </View>
           <View style={{height:12,backgroundColor:'#1a4a35',borderRadius:8,overflow:'hidden',marginBottom:5}}>
-            <View style={{position:'absolute',height:'100%',width:`${percentage}%`,backgroundColor:'#38bdf8',borderRadius:8}}/>
+            <View style={{position:'absolute',height:'100%',width:`${percentage}%` as any,backgroundColor:'#38bdf8',borderRadius:8}}/>
           </View>
           <Text style={{color:'#4d9e7a',fontSize:10,fontWeight:'600'}}>{progress}/{required} XP · Level {level+1} unlocks soon</Text>
         </LinearGradient>
