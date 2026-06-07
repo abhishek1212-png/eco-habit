@@ -481,8 +481,8 @@ export default function App() {
               <Text style={{fontSize:22,fontWeight:'800',color:'#0b8457'}}>🌿 Eco Habit</Text>
               <View style={{alignItems:'flex-end'}}>
                 <Text style={{color:'#6b7280',fontWeight:'600',fontSize:13}}>{userEmail?.split('@')[0]||'Guest'}</Text>
-                <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#fee2e2',borderRadius:8,paddingHorizontal:12,paddingVertical:5,marginTop:4}}>
-                  <Text style={{color:'#ef4444',fontWeight:'700',fontSize:12}}>Logout</Text>
+                <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6,marginTop:4}}>
+                  <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>Logout</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -495,8 +495,8 @@ export default function App() {
                 <Text style={{color:'#fff',fontWeight:'900',fontSize:15}}>🔥 {xp} XP</Text>
                 <Text style={{color:'rgba(255,255,255,0.7)',fontSize:12,fontWeight:'600'}}>{progress}/{required}</Text>
               </View>
-              <View style={{height:10,backgroundColor:'rgba(255,255,255,0.2)',borderRadius:6,overflow:'hidden'}}>
-                <View style={{position:'absolute',height:'100%',width:`${percentage}%`,backgroundColor:'rgba(255,255,255,0.9)',borderRadius:6}} />
+              <View style={{height:12,backgroundColor:'#1a4a35',borderRadius:8,overflow:'hidden'}}>
+                <View style={{position:'absolute',height:'100%',width:`${percentage}%`,backgroundColor:'#38bdf8',borderRadius:8}} />
               </View>
             </View>
           </View>
@@ -595,11 +595,11 @@ export default function App() {
                           return (
                             <TouchableOpacity key={d.id}
                               style={{paddingVertical:9,paddingHorizontal:10,borderRadius:14,marginBottom:6,flexDirection:'row',alignItems:'center',
-                                backgroundColor:active?'#022c22':'#f3e8ff',
-                                borderWidth:2,borderColor:active?'#4ade80':'#c084fc',minHeight:44}}
+                                backgroundColor:active?'#ddd6fe':'#ede9fe',
+                                borderWidth:1,borderColor:active?'#7c3aed':'#c4b5fd',minHeight:44}}
                               onPress={()=>setSelectedDeed(d.id)}>
                               <Text style={{marginRight:6,fontSize:15,flexShrink:0}}>{d.emoji}</Text>
-                              <Text style={{fontWeight:'800',fontSize:12,color:active?'#4ade80':'#6b21a8',flexShrink:1,lineHeight:16}}>{d.label}</Text>
+                              <Text style={{fontWeight:'700',fontSize:12,color:active?'#4c1d95':'#5b21b6',flexShrink:1,lineHeight:16}}>{d.label}</Text>
                             </TouchableOpacity>
                           );
                         })}

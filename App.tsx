@@ -955,7 +955,7 @@ export default function App() {
                         onPress={() => setSelectedDeed(d.id)}
                       >
                         <Text style={styles.deedEmoji}>{d.emoji}</Text>
-                        <Text style={[styles.deedLabel, active && { color: '#ffffff' }]}>{d.label}</Text>
+                        <Text style={[styles.deedLabel, active && { color: '#e0e7ff' }]}>{d.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -987,7 +987,7 @@ export default function App() {
                         onPress={() => setSelectedDeed(d.id)}
                       >
                         <Text style={styles.deedEmoji}>{d.emoji}</Text>
-                        <Text style={[styles.deedLabel, active && { color: '#ffffff' }]}>{d.label}</Text>
+                        <Text style={[styles.deedLabel, active && { color: '#e0e7ff' }]}>{d.label}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => {
@@ -1163,16 +1163,16 @@ const styles = StyleSheet.create({
   },
   heroTop:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   heroLogo:      { fontSize: 16, fontWeight: '900', color: '#ffffff' },
-  heroSignOut:   { backgroundColor: '#1a4a35', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: '#2d6b4f' },
-  heroSignOutTxt:{ color: '#6ee7b7', fontWeight: '700', fontSize: 11 },
+  heroSignOut:   { backgroundColor: '#f59e0b', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 0 },
+  heroSignOutTxt:{ color: '#fff', fontWeight: '700', fontSize: 12 },
   heroTagline:   { color: '#6ee7b7', fontSize: 12, marginBottom: 14 },
   heroStats:     { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   heroStat:      { flex: 1, alignItems: 'center' },
   heroStatVal:   { color: '#ffffff', fontSize: 18, fontWeight: '900' },
   heroStatLbl:   { color: '#4d9e7a', fontSize: 10, fontWeight: '600', marginTop: 2 },
   heroStatDiv:   { width: 1, height: 36, backgroundColor: '#1e5c3e' },
-  heroXpBg:      { height: 6, backgroundColor: '#1a4a35', borderRadius: 4, overflow: 'hidden', marginBottom: 5 },
-  heroXpFill:    { height: '100%', backgroundColor: '#4ade80', borderRadius: 4 },
+  heroXpBg:      { height: 12, backgroundColor: '#1a4a35', borderRadius: 8, overflow: 'hidden', marginBottom: 6 },
+  heroXpFill:    { height: '100%', backgroundColor: '#38bdf8', borderRadius: 8 },
   heroXpTxt:     { color: '#4d9e7a', fontSize: 10, fontWeight: '600' },
 
   // ── Cards ──
@@ -1281,10 +1281,10 @@ const styles = StyleSheet.create({
   ampmText:       { color: '#2a6f3d', fontWeight: '700' },
   ampmTextActive: { color: '#fff' },
 
-  deedItem:       { paddingVertical: 8, paddingHorizontal: 10, backgroundColor: '#022c22', borderRadius: 24, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: '#064e3b', width: '47%', minHeight: 40 },
-  deedItemActive: { backgroundColor: '#064e3b', borderColor: '#4ade80' },
+  deedItem:       { paddingVertical: 8, paddingHorizontal: 10, backgroundColor: '#eef2ff', borderRadius: 14, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#a5b4fc', width: '47%', minHeight: 40 },
+  deedItemActive: { backgroundColor: '#4338ca', borderColor: '#6366f1' },
   deedEmoji:      { marginRight: 6, fontSize: 15, flexShrink: 0 },
-  deedLabel:      { color: '#6ee7b7', fontWeight: '800', fontSize: 11, flexShrink: 1, flexWrap: 'wrap', lineHeight: 15 },
+  deedLabel:      { color: '#3730a3', fontWeight: '700', fontSize: 13, flexShrink: 1, flexWrap: 'wrap', lineHeight: 17 },
   categoryHeader: { fontSize: 12, fontWeight: '800', color: '#ff9f1c', marginBottom: 8, marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 },
 
   autoButton:     { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#ffd166', borderRadius: 10, justifyContent: 'center' },
