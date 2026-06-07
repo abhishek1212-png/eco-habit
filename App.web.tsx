@@ -135,6 +135,24 @@ function StreakTree({ streak, broken }: { streak: number; broken: boolean }) {
   );
 }
 
+// ─── Web Confetti ─────────────────────────────────────────────────────────────
+function fireWebConfetti() {
+  try {
+    const win = window as any;
+    const fire = () => win.confetti({
+      particleCount: 120,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#4ade80','#22c55e','#facc15','#fb923c','#60a5fa','#f472b6','#a78bfa'],
+    });
+    if (win.confetti) { fire(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js';
+    script.onload = fire;
+    document.head.appendChild(script);
+  } catch {}
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [deedCategories] = useState(DEFAULT_DEED_CATEGORIES);
@@ -345,6 +363,7 @@ export default function App() {
     const h = habits.find(x=>x.id===id); if (!h) return;
     const willComplete = !h.completed;
     if (willComplete) {
+      fireWebConfetti();
       setXp(v=>Math.max(0,v+XP_PER));
       const today = todayStr(); const yest = yesterdayStr();
       const newStreak = h.lastCompletedDate===yest||h.lastCompletedDate===today ? (h.streak||0)+1 : 1;
@@ -400,10 +419,10 @@ export default function App() {
   // ── Login Screen ──────────────────────────────────────────────────────────
   if (!loggedIn) {
     return (
-      <SafeAreaView style={{flex:1,backgroundColor:'#0d3b2e'}}>
-        <LinearGradient colors={['#0d3b2e','#1a5c42','#0d3b2e']} style={{flex:1}} start={[0,0]} end={[1,1]}>
+      <SafeAreaView style={{flex:1,backgroundColor:'#0d3b2e',minHeight:'100vh' as any}}>
+        <LinearGradient colors={['#0d3b2e','#1a5c42','#0d3b2e']} style={{flex:1,minHeight:'100vh' as any}} start={[0,0]} end={[1,1]}>
           <StatusBar style="light"/>
-          <View style={{flex:1,alignItems:'center',justifyContent:'center',padding:28,gap:32}}>
+          <View style={{flex:1,minHeight:'100vh' as any,alignItems:'center',justifyContent:'center',padding:28,gap:32}}>
             {/* Animated Earth */}
             <Animated.View style={{alignItems:'center',transform:[{translateY:Animated.add(earthY,earthBob)},{scale:earthScale}]}}>
               <View style={{width:120,height:120,borderRadius:60,backgroundColor:'#1565c0',overflow:'hidden',alignItems:'center',justifyContent:'center'}}>

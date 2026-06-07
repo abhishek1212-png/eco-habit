@@ -419,6 +419,8 @@ export default function App() {
 
   const level = Math.floor(xp / 100) + 1;
   const progress = xp % 100;
+  const required = 100;
+  const percentage = progress;
 
   const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const WORLD_ZONES: { label: string; tz: string }[] = [
@@ -603,7 +605,7 @@ export default function App() {
         if (typeof remote.globalStreak === 'number') setGlobalStreak((local) => Math.max(local, remote.globalStreak!));
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
         if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
-      } else {
+      }r else {
         await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate });
       }
     } catch (err) {
@@ -785,37 +787,39 @@ export default function App() {
   if (!loggedIn) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <LinearGradient colors={['#6ee7b7', '#3b82f6', '#ec4899']} style={styles.gradient} start={[0, 0]} end={[1, 1]}>
+        <LinearGradient colors={['#022c22','#064e3b','#065f46']} style={styles.gradient} start={[0, 0]} end={[1, 1]}>
           <StatusBar style="light" />
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginTitle}>Welcome to Eco Habit</Text>
+          <ScrollView contentContainerStyle={styles.loginContainer} keyboardShouldPersistTaps="handled">
             <EarthMascot />
-            <Text style={styles.loginNotice}>
-              Use your email and password to sign in. The first login creates a secure account.
-            </Text>
-            <TextInput
-              style={[styles.input, styles.loginInput]}
-              placeholder="example@gmail.com"
-              placeholderTextColor="#7a9b7a"
-              value={login.email}
-              onChangeText={(v) => setLogin((p) => ({ ...p, email: v }))}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-            />
-            <TextInput
-              style={[styles.input, styles.loginInput]}
-              placeholder="Password"
-              placeholderTextColor="#7a9b7a"
-              value={login.password}
-              onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
-              secureTextEntry
-              textContentType="password"
-            />
-            <TouchableOpacity style={[styles.addButton, styles.loginButton]} onPress={handleLogin} accessibilityRole="button">
-              <Text style={styles.addButtonText}>Login / Sign up</Text>
-            </TouchableOpacity>
-          </View>
+            <Text style={styles.loginTitle}>🌿 Eco Habit</Text>
+            <Text style={styles.loginNotice}>Small habits. Big impact. 🌍</Text>
+
+            <View style={styles.loginCard}>
+              <Text style={styles.loginCardTitle}>Welcome back 👋</Text>
+              <TextInput
+                style={styles.loginInput}
+                placeholder="Email address"
+                placeholderTextColor="rgba(110,231,183,0.6)"
+                value={login.email}
+                onChangeText={(v) => setLogin((p) => ({ ...p, email: v }))}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                textContentType="emailAddress"
+              />
+              <TextInput
+                style={styles.loginInput}
+                placeholder="Password"
+                placeholderTextColor="rgba(110,231,183,0.6)"
+                value={login.password}
+                onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
+                secureTextEntry
+                textContentType="password"
+              />
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
+                <Text style={styles.loginButtonText}>Login / Sign up</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </LinearGradient>
       </SafeAreaView>
     );
@@ -825,39 +829,56 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#e6f7ea', '#d7f3d9', '#ffffff']} style={styles.gradient} start={[0, 0]} end={[1, 1]}>
-        <StatusBar style="dark" />
-        <ScrollView contentContainerStyle={styles.container}>
+      <StatusBar style="light" />
+      <ScrollView style={{ flex: 1, backgroundColor: '#f0fdf4' }}>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.logo}>🌿 Eco Habit</Text>
-            <Text style={styles.tag}>Small reminders for greener days</Text>
-            <View style={styles.xpRow}>
-              <View>
-                <Text style={styles.xpText}>XP: {xp}</Text>
-                <Text style={styles.xpText}>Level {level}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.userLabel}>{userEmail || 'Not signed in'}</Text>
-                <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-                  <Text style={styles.logoutText}>Logout</Text>
-                </TouchableOpacity>
-              </View>
+        {/* ── Hero Header ── */}
+        <LinearGradient colors={['#011a12', '#022c22', '#064e3b']} style={styles.hero} start={[0, 0]} end={[1, 1]}>
+          <View style={styles.heroTop}>
+            <Text style={styles.heroLogo}>🌿 Eco Habit</Text>
+            <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
+              <Text style={styles.heroSignOutTxt}>Sign out</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.heroTagline}>
+            {userEmail?.split('@')[0] || 'Eco Warrior'} · {globalStreak > 0 ? `🌱 ${globalStreak}-day streak!` : '🌱 Start your journey!'}
+          </Text>
+          <View style={styles.heroStats}>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatVal}>⭐ {level}</Text>
+              <Text style={styles.heroStatLbl}>Level</Text>
             </View>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>1 task completed = 10 XP</Text>
+            <View style={styles.heroStatDiv} />
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatVal}>🔥 {globalStreak}</Text>
+              <Text style={styles.heroStatLbl}>Streak</Text>
             </View>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            <View style={styles.heroStatDiv} />
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatVal}>{xp}</Text>
+              <Text style={styles.heroStatLbl}>XP</Text>
             </View>
           </View>
+          <View style={styles.heroXpBg}>
+            <View style={[styles.heroXpFill, { width: `${percentage}%` as any }]} />
+          </View>
+          <Text style={styles.heroXpTxt}>{progress}/{required} XP · Level {level + 1} unlocks soon</Text>
+        </LinearGradient>
+
+        <View style={styles.content}>
 
           {/* ── Streak Tree Card ── */}
           <View style={styles.card}>
-            <Text style={styles.section}>Your Streak Tree</Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.section}>🔥 Streak Tree</Text>
+              <View style={[styles.streakPill, globalStreak > 0 ? styles.streakPillActive : styles.streakPillEmpty]}>
+                <Text style={[styles.streakPillText, globalStreak > 0 ? styles.streakPillTextActive : styles.streakPillTextEmpty]}>
+                  {globalStreak > 0 ? `${globalStreak} days strong` : 'No streak yet'}
+                </Text>
+              </View>
+            </View>
             <Text style={styles.cardSubtitle}>
-              Complete at least one habit every day to grow your tree. Miss a day and it gets chopped! 🪓
+              Complete at least one habit daily to grow your tree. Miss a day and it gets chopped! 🪓
             </Text>
             <StreakTree streak={globalStreak} broken={streakBroken} />
             {/* Streak progress dots (up to 7 days shown) */}
@@ -961,45 +982,59 @@ export default function App() {
                     return (
                       <TouchableOpacity
                         key={d.id}
-                        style={[
-                          styles.deedItem,
-                          active && styles.deedItemActive,
-                          {
-                            width: isTablet ? '30%' : '48%',
-                            flexDirection: isTablet ? 'column' : 'row',
-                            alignItems: isTablet ? 'flex-start' : 'center',
-                          },
-                        ]}
+                        style={[styles.deedItem, active && styles.deedItemActive]}
                         onPress={() => setSelectedDeed(d.id)}
                       >
-                        <Text style={[styles.deedEmoji, isTablet && { fontSize: 22, marginBottom: 6 }]}>{d.emoji}</Text>
-                        <Text style={[styles.deedLabel, isTablet && { fontSize: 16 }]}>{d.label}</Text>
+                        <Text style={styles.deedEmoji}>{d.emoji}</Text>
+                        <Text style={[styles.deedLabel, active && { color: '#fff' }]}>{d.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               </View>
             ))}
-            {customDeeds.length > 0 && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={styles.categoryHeader}>My Custom Deeds</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                  {customDeeds.map((d) => {
-                    const active = selectedDeed === d.id;
-                    return (
+            {/* ── My Custom Deeds ── */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.categoryHeader}>My Custom Deeds</Text>
+              {customDeeds.length === 0 && (
+                <Text style={{ color: '#9ca3af', fontSize: 12, marginBottom: 8, fontStyle: 'italic' }}>
+                  No custom deeds yet — add one below!
+                </Text>
+              )}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {customDeeds.map((d) => {
+                  const active = selectedDeed === d.id;
+                  return (
+                    <View
+                      key={d.id}
+                      style={[
+                        styles.deedItem,
+                        active && styles.deedItemActive,
+                        { flexDirection: 'row', alignItems: 'center', marginRight: 8, marginBottom: 8 },
+                      ]}
+                    >
                       <TouchableOpacity
-                        key={d.id}
-                        style={[styles.deedItem, active && styles.deedItemActive, { width: isTablet ? '30%' : '48%' }]}
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                         onPress={() => setSelectedDeed(d.id)}
                       >
                         <Text style={styles.deedEmoji}>{d.emoji}</Text>
-                        <Text style={styles.deedLabel}>{d.label}</Text>
+                        <Text style={[styles.deedLabel, active && { color: '#fff' }]}>{d.label}</Text>
                       </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (selectedDeed === d.id) setSelectedDeed(null);
+                          setCustomDeeds((prev) => prev.filter((x) => x.id !== d.id));
+                        }}
+                        style={{ marginLeft: 6, paddingHorizontal: 4 }}
+                      >
+                        <Text style={{ color: active ? '#fff' : '#ef4444', fontWeight: '800', fontSize: 13 }}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
               </View>
-            )}
+            </View>
+
             {/* Add custom deed inline */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
               <TextInput
@@ -1093,14 +1128,14 @@ export default function App() {
                           </View>
                         )}
                       </View>
-                      <Text style={styles.meta}>{item.time}</Text>
+                      <Text style={styles.meta}>⏱ {item.time}</Text>
                     </View>
                     <View style={styles.actions}>
-                      <TouchableOpacity style={styles.smallButton} onPress={() => toggle(item.id)}>
-                        <Text style={styles.smallText}>{item.completed ? 'Undo' : 'Done'}</Text>
+                      <TouchableOpacity style={[styles.smallButton, item.completed && styles.smallButtonDone]} onPress={() => toggle(item.id)}>
+                        <Text style={[styles.smallText, item.completed && styles.smallTextDone]}>{item.completed ? 'Undo' : 'Done ✓'}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.smallButton, styles.delete]} onPress={() => remove(item.id)}>
-                        <Text style={styles.smallText}>Delete</Text>
+                        <Text style={styles.smallText}>✕</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1110,13 +1145,14 @@ export default function App() {
           </View>
 
           <View style={styles.footer}>
-            <Button title="Clear completed" onPress={  clearCompleted} />
+            <Button title="Clear completed" onPress={clearCompleted} />
             <Text style={styles.footerNote}>Made with ♻️ and 🌱</Text>
           </View>
 
-        </ScrollView>
+        </View>{/* end content */}
+      </ScrollView>
 
-        {Platform.OS !== 'web' && (
+      {Platform.OS !== 'web' && (
           <ConfettiCannon
             ref={confettiRef}
             count={120}
@@ -1128,7 +1164,6 @@ export default function App() {
             colors={['#4ade80', '#22c55e', '#16a34a', '#facc15', '#fb923c', '#60a5fa', '#f472b6']}
           />
         )}
-      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -1138,111 +1173,154 @@ export default function App() {
 const streakDotStyles = StyleSheet.create({
   row:       { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 8 },
   dot:       { width: 12, height: 12, borderRadius: 6 },
-  dotFilled: { backgroundColor: '#22c55e' },
+  dotFilled: { backgroundColor: '#10b981' },
   dotEmpty:  { backgroundColor: '#d1fae5', borderWidth: 1, borderColor: '#86efac' },
-  label:     { textAlign: 'center', color: '#15803d', fontWeight: '700', marginTop: 6, fontSize: 13 },
+  label:     { textAlign: 'center', color: '#059669', fontWeight: '700', marginTop: 6, fontSize: 13 },
 });
 
 // ─── Main Styles ──────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safeArea:      { flex: 1, backgroundColor: 'transparent' },
-  gradient:      { flex: 1 },
-  container:     { padding: 16, paddingBottom: 40 },
-  header:        { alignItems: 'center', marginBottom: 12 },
-  logo:          { fontSize: 28, fontWeight: '800', color: '#0b8457' },
-  tag:           { color: '#2b7a78', marginTop: 4 },
-  xpRow:         { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingTop: 8 },
-  xpText:        { color: '#ff6b6b', fontWeight: '700' },
-  progressBar:   { width: '100%', height: 10, backgroundColor: '#fff2d6', borderRadius: 10, marginTop: 8, overflow: 'hidden' },
-  progressFill:  { height: '100%', backgroundColor: '#06c39a' },
+  safeArea:  { flex: 1, backgroundColor: '#011a12' },
+  gradient:  { flex: 1 },
+  container: { padding: 16, paddingBottom: 48 },
+  content:   { padding: 14, paddingBottom: 40 },
 
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+  // ── Hero ──
+  hero: {
+    paddingTop: 18, paddingBottom: 26, paddingHorizontal: 20,
+    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
+    marginBottom: 4,
   },
-  section:       { fontSize: 16, fontWeight: '700', color: '#0b8457', marginBottom: 4 },
-  cardSubtitle:  { color: '#547a56', fontSize: 13, marginBottom: 4 },
+  heroTop:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  heroLogo:      { fontSize: 16, fontWeight: '900', color: '#fff' },
+  heroSignOut:   { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  heroSignOutTxt:{ color: '#6ee7b7', fontWeight: '700', fontSize: 11 },
+  heroTagline:   { color: 'rgba(110,231,183,0.65)', fontSize: 12, marginBottom: 14 },
+  heroStats:     { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  heroStat:      { flex: 1, alignItems: 'center' },
+  heroStatVal:   { color: '#fff', fontSize: 18, fontWeight: '900' },
+  heroStatLbl:   { color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '600', marginTop: 2 },
+  heroStatDiv:   { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.15)' },
+  heroXpBg:      { height: 6, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 4, overflow: 'hidden', marginBottom: 5 },
+  heroXpFill:    { height: '100%', backgroundColor: '#4ade80', borderRadius: 4 },
+  heroXpTxt:     { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '600' },
 
-  // Eco Tree Progress
+  // ── Cards ──
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#059669',
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 5 },
+    borderWidth: 1,
+    borderColor: '#f0fdf4',
+  },
+  cardHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  section:       { fontSize: 15, fontWeight: '800', color: '#064e3b' },
+  cardSubtitle:  { color: '#6b7280', fontSize: 13, marginBottom: 8, lineHeight: 18 },
+
+  // ── Streak pill ──
+  streakPill:          { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
+  streakPillActive:    { backgroundColor: '#dcfce7', borderColor: '#86efac' },
+  streakPillEmpty:     { backgroundColor: '#f3f4f6', borderColor: '#e5e7eb' },
+  streakPillText:      { fontSize: 12, fontWeight: '700' },
+  streakPillTextActive:{ color: '#15803d' },
+  streakPillTextEmpty: { color: '#9ca3af' },
+
+  // ── Eco Tree ──
   treeContainer:    { marginTop: 8 },
   treeRow:          { flexDirection: 'row', marginBottom: 10 },
   treeMarkerColumn: { alignItems: 'center', width: 36 },
-  treeNode:         { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  treeNodeActive:   { backgroundColor: '#22c55e' },
+  treeNode:         { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  treeNodeActive:   { backgroundColor: '#10b981' },
   treeNodeInactive: { backgroundColor: '#e5e7eb' },
   treeNodeEmoji:    { fontSize: 16 },
   treeConnector:    { width: 2, flex: 1, backgroundColor: '#d1fae5', minHeight: 10 },
-  treeMeta:         { flex: 1, paddingLeft: 10, justifyContent: 'center' },
-  treeNodeTitle:    { fontWeight: '700', color: '#1a3d1f', fontSize: 14 },
-  treeNodeMeta:     { color: '#547a56', fontSize: 12, marginTop: 2 },
-  treeProgressBar:  { height: 6, backgroundColor: '#f0fdf4', borderRadius: 4, marginTop: 4, overflow: 'hidden' },
-  treeProgressFill: { height: '100%', backgroundColor: '#22c55e' },
-  treeStatus:       { textAlign: 'center', color: '#0b8457', fontWeight: '700', marginTop: 8 },
+  treeMeta:         { flex: 1, paddingLeft: 12, justifyContent: 'center' },
+  treeNodeTitle:    { fontWeight: '700', color: '#064e3b', fontSize: 14 },
+  treeNodeMeta:     { color: '#6b7280', fontSize: 12, marginTop: 2 },
+  treeProgressBar:  { height: 6, backgroundColor: '#d1fae5', borderRadius: 4, marginTop: 6, overflow: 'hidden' },
+  treeProgressFill: { height: '100%', backgroundColor: '#10b981' },
+  treeStatus:       { textAlign: 'center', color: '#059669', fontWeight: '700', marginTop: 10, fontSize: 13 },
 
-  input:         { borderWidth: 1, borderColor: '#f3e8ff', borderRadius: 10, padding: 10, marginBottom: 8, backgroundColor: '#fffaf6' },
-  empty:         { color: '#6b8a6a' },
-  row:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  rowDone:       { opacity: 0.6 },
+  // ── Inputs ──
+  input: { borderWidth: 1, borderColor: '#f3e8ff', borderRadius: 10, padding: 10, marginBottom: 8, backgroundColor: '#fffaf6' },
+
+  // ── Upcoming list ──
+  empty:         { color: '#9ca3af', textAlign: 'center', paddingVertical: 16 },
+  row: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12, paddingHorizontal: 12, marginBottom: 8,
+    backgroundColor: '#fff', borderRadius: 14,
+    borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 4,
+    borderTopColor: '#d1fae5', borderRightColor: '#d1fae5', borderBottomColor: '#d1fae5', borderLeftColor: '#10b981',
+  },
+  rowDone:       { borderLeftColor: '#d1d5db', borderTopColor: '#e5e7eb', borderRightColor: '#e5e7eb', borderBottomColor: '#e5e7eb', backgroundColor: '#f9fafb' },
   rowText:       { flex: 1, paddingRight: 8 },
-  title:         { fontSize: 15, fontWeight: '700', color: '#234b2a' },
-  titleDone:     { textDecorationLine: 'line-through', color: '#6b8a6a' },
-  meta:          { color: '#7a9b7a', marginTop: 2 },
-  actions:       { flexDirection: 'row' },
-  smallButton:   { backgroundColor: '#06c39a', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, marginLeft: 8 },
-  smallText:     { color: '#fff', fontWeight: '700' },
-  delete:        { backgroundColor: '#ff6b6b' },
+  title:         { fontSize: 14, fontWeight: '700', color: '#064e3b' },
+  titleDone:     { textDecorationLine: 'line-through', color: '#9ca3af' },
+  meta:          { color: '#9ca3af', marginTop: 3, fontSize: 12 },
+  actions:       { flexDirection: 'row', gap: 6 },
+  smallButton:   { backgroundColor: '#10b981', paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20 },
+  smallButtonDone:{ backgroundColor: '#f3f4f6' },
+  smallText:     { color: '#fff', fontWeight: '700', fontSize: 12 },
+  smallTextDone: { color: '#6b7280' },
+  delete:        { backgroundColor: '#ff6b6b', borderWidth: 0 },
   streakBadge:   { marginLeft: 6, backgroundColor: '#fff3cd', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: '#ffc107' },
-  streakText:    { fontSize: 12, fontWeight: '700', color: '#b45309' },
+  streakText:    { fontSize: 11, fontWeight: '700', color: '#b45309' },
 
-  footer:        { alignItems: 'center', marginTop: 8 },
-  footerNote:    { color: '#587a5a', marginTop: 8 },
+  footer:        { alignItems: 'center', marginTop: 10 },
+  footerNote:    { color: '#a7f3d0', marginTop: 8, fontSize: 12 },
 
-  loginContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 32, margin: 18, shadowColor: '#0f766e', shadowOpacity: 0.2, shadowRadius: 28, shadowOffset: { width: 0, height: 12 } },
-  loginTitle:     { fontSize: 28, fontWeight: '900', color: '#0f766e', marginBottom: 14, letterSpacing: 0.5 },
-  loginEmojiRow:  { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 12 },
-  loginEmoji:     { fontSize: 24 },
-  loginNotice:    { color: '#134e4a', marginBottom: 20, textAlign: 'center', maxWidth: 320, lineHeight: 22 },
-  loginInput:     { backgroundColor: '#f8fffb', borderColor: '#c7f5e7', borderWidth: 1, borderRadius: 16, padding: 14, shadowColor: '#86efac', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
-  loginButton:    { backgroundColor: '#10b981', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 28 },
+  // ── Login ──
+  loginContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24, paddingBottom: 40 },
+  loginTitle:     { fontSize: 28, fontWeight: '900', color: '#fff', marginTop: 10, letterSpacing: 0.5 },
+  loginNotice:    { color: '#6ee7b7', marginBottom: 28, textAlign: 'center', fontSize: 14 },
+  loginCard:      { width: '100%', maxWidth: 420, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(52,211,153,0.25)', padding: 24 },
+  loginCardTitle: { fontSize: 18, fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: 20 },
+  loginInput:     { backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(110,231,183,0.3)', borderRadius: 14, padding: 14, color: '#fff', marginBottom: 12, fontSize: 15 },
+  loginButton:    { backgroundColor: '#10b981', borderRadius: 14, paddingVertical: 15, alignItems: 'center', shadowColor: '#10b981', shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 5 } },
+  loginButtonText:{ color: '#fff', fontWeight: '900', fontSize: 16 },
 
-  userLabel:      { color: '#547a56', fontWeight: '700', marginBottom: 6 },
-  logoutButton:   { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#ff6b6b' },
-  logoutText:     { color: '#fff', fontWeight: '700' },
+  // ── (kept for compat) ──
+  header:        { marginBottom: 6 },
+  userLabel:     { color: '#6b7280', fontWeight: '600', fontSize: 12 },
+  logoutButton:  { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#fef2f2' },
+  logoutText:    { color: '#ef4444', fontWeight: '700', fontSize: 12 },
 
+  // ── World Clock ──
   worldRow:       { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 8 },
-  worldItem:      { backgroundColor: '#f0f8ff', padding: 10, borderRadius: 10, marginBottom: 8 },
+  worldItem:      { backgroundColor: '#f0f8ff', padding: 10, borderRadius: 12, marginBottom: 8 },
   worldLabel:     { color: '#1f6fbe', fontWeight: '700' },
-  worldTime:      { color: '#0b8457', marginTop: 4, fontWeight: '800' },
-  localHighlight: { borderWidth: 1, borderColor: '#06c39a', backgroundColor: '#e8fff4' },
-  detectedBadge:  { backgroundColor: '#06c39a', color: '#fff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, fontWeight: '700', fontSize: 12 },
-  toggleButton:   { paddingHorizontal: 8, paddingVertical: 6, backgroundColor: '#ff9f1c', borderRadius: 8 },
+  worldTime:      { color: '#059669', marginTop: 4, fontWeight: '800' },
+  localHighlight: { borderWidth: 1, borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  detectedBadge:  { backgroundColor: '#10b981', color: '#fff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, fontWeight: '700', fontSize: 11 },
+  toggleButton:   { paddingHorizontal: 8, paddingVertical: 6, backgroundColor: '#f59e0b', borderRadius: 8 },
   toggleText:     { color: '#fff', fontWeight: '700' },
 
-  addButton:      { backgroundColor: '#845ef7', paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
-  addButtonText:  { color: '#fff', fontWeight: '800' },
+  // ── Add reminder ──
+  addButton:      { backgroundColor: '#845ef7', paddingVertical: 13, borderRadius: 14, alignItems: 'center', shadowColor: '#845ef7', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  addButtonText:  { color: '#fff', fontWeight: '900', fontSize: 15 },
 
   ampmRow:        { width: 90, flexDirection: 'row', justifyContent: 'space-between' },
-  ampmButton:     { paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: '#fff6f0' },
-  ampmActive:     { backgroundColor: '#06c39a' },
+  ampmButton:     { paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8, backgroundColor: '#fff6f0', borderWidth: 1, borderColor: '#ffd6b0' },
+  ampmActive:     { backgroundColor: '#06c39a', borderColor: '#06c39a' },
   ampmText:       { color: '#2a6f3d', fontWeight: '700' },
   ampmTextActive: { color: '#fff' },
 
-  deedItem:       { padding: 10, backgroundColor: '#fff7fb', borderRadius: 12, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
-  deedItemActive: { borderWidth: 1, borderColor: '#ff6b6b', backgroundColor: '#fff0f2' },
-  deedEmoji:      { marginRight: 8, fontSize: 18 },
-  deedLabel:      { color: '#6b3d6b', fontWeight: '700' },
-  categoryHeader: { fontSize: 13, fontWeight: '800', color: '#ff9f1c', marginBottom: 6, marginTop: 4 },
+  deedItem:       { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fff7fb', borderRadius: 22, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#f3d0f0' },
+  deedItemActive: { backgroundColor: '#ff6b6b', borderColor: '#ff6b6b' },
+  deedEmoji:      { marginRight: 6, fontSize: 16 },
+  deedLabel:      { color: '#6b3d6b', fontWeight: '700', fontSize: 12 },
+  categoryHeader: { fontSize: 11, fontWeight: '800', color: '#ff9f1c', marginBottom: 6, marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
 
-  autoButton:     { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#ffd166', borderRadius: 8, justifyContent: 'center' },
-  autoText:       { color: '#6b3d6b', fontWeight: '700', fontSize: 12 },
+  autoButton:     { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#ffd166', borderRadius: 10, justifyContent: 'center' },
+  autoText:       { color: '#6b3d6b', fontWeight: '800', fontSize: 12 },
 
   infoBox:        { width: '100%', padding: 10, backgroundColor: '#e8fff4', borderRadius: 12, borderWidth: 1, borderColor: '#06c39a', marginBottom: 12 },
-  infoText:       { color: '#0b8457', fontWeight: '700', textAlign: 'center' },
+  infoText:       { color: '#0b8457', fontWeight: '700', textAlign: 'center', fontSize: 13 },
 });
