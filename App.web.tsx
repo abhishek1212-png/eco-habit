@@ -470,36 +470,45 @@ export default function App() {
 
   // ── Main Screen ───────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={{flex:1,backgroundColor:'#f8faf8'}}>
-      <StatusBar style="dark"/>
-      <ScrollView contentContainerStyle={{padding:isWide?32:16,paddingBottom:48,alignItems:'center'}}>
-        <View style={{width:'100%',maxWidth:isWide?900:undefined}}>
+    <SafeAreaView style={{flex:1,backgroundColor:'#011a12'}}>
+      <StatusBar style="light"/>
+      <ScrollView style={{flex:1}}>
 
-          {/* Header */}
-          <View style={{marginBottom:16}}>
-            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{fontSize:22,fontWeight:'800',color:'#0b8457'}}>🌿 Eco Habit</Text>
-              <View style={{alignItems:'flex-end'}}>
-                <Text style={{color:'#6b7280',fontWeight:'600',fontSize:13}}>{userEmail?.split('@')[0]||'Guest'}</Text>
-                <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6,marginTop:4}}>
-                  <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>Logout</Text>
-                </TouchableOpacity>
-              </View>
+        {/* ── Hero Header ── */}
+        <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{paddingTop:18,paddingBottom:26,paddingHorizontal:isWide?40:20,borderBottomLeftRadius:28,borderBottomRightRadius:28,marginBottom:4}} start={[0,0]} end={[1,1]}>
+          <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <Text style={{fontSize:18,fontWeight:'900',color:'#fff'}}>🌿 Eco Habit</Text>
+            <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
+              <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>Sign out</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{color:'#6ee7b7',fontSize:12,marginBottom:14}}>
+            {userEmail?.split('@')[0]||'Eco Warrior'} · {globalStreak>0?`🌱 ${globalStreak}-day streak!`:'🌱 Start your journey!'}
+          </Text>
+          <View style={{flexDirection:'row',alignItems:'center',marginBottom:16}}>
+            <View style={{flex:1,alignItems:'center'}}>
+              <Text style={{color:'#fff',fontSize:18,fontWeight:'900'}}>⭐ {level}</Text>
+              <Text style={{color:'#4d9e7a',fontSize:10,fontWeight:'600',marginTop:2}}>Level</Text>
             </View>
-            {/* XP Bar */}
-            <View style={{backgroundColor:levelColor,borderRadius:16,padding:12,marginTop:10,shadowColor:levelColor,shadowOpacity:0.3,shadowRadius:10,shadowOffset:{width:0,height:4}}}>
-              <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-                <View style={{backgroundColor:'rgba(255,255,255,0.2)',borderRadius:20,paddingHorizontal:10,paddingVertical:3}}>
-                  <Text style={{color:'#fff',fontWeight:'800',fontSize:13}}>⭐ Level {level}</Text>
-                </View>
-                <Text style={{color:'#fff',fontWeight:'900',fontSize:15}}>🔥 {xp} XP</Text>
-                <Text style={{color:'rgba(255,255,255,0.7)',fontSize:12,fontWeight:'600'}}>{progress}/{required}</Text>
-              </View>
-              <View style={{height:12,backgroundColor:'#1a4a35',borderRadius:8,overflow:'hidden'}}>
-                <View style={{position:'absolute',height:'100%',width:`${percentage}%`,backgroundColor:'#38bdf8',borderRadius:8}} />
-              </View>
+            <View style={{width:1,height:36,backgroundColor:'#1e5c3e'}}/>
+            <View style={{flex:1,alignItems:'center'}}>
+              <Text style={{color:'#fff',fontSize:18,fontWeight:'900'}}>🔥 {globalStreak}</Text>
+              <Text style={{color:'#4d9e7a',fontSize:10,fontWeight:'600',marginTop:2}}>Streak</Text>
+            </View>
+            <View style={{width:1,height:36,backgroundColor:'#1e5c3e'}}/>
+            <View style={{flex:1,alignItems:'center'}}>
+              <Text style={{color:'#fff',fontSize:18,fontWeight:'900'}}>{xp}</Text>
+              <Text style={{color:'#4d9e7a',fontSize:10,fontWeight:'600',marginTop:2}}>XP</Text>
             </View>
           </View>
+          <View style={{height:12,backgroundColor:'#1a4a35',borderRadius:8,overflow:'hidden',marginBottom:5}}>
+            <View style={{position:'absolute',height:'100%',width:`${percentage}%`,backgroundColor:'#38bdf8',borderRadius:8}}/>
+          </View>
+          <Text style={{color:'#4d9e7a',fontSize:10,fontWeight:'600'}}>{progress}/{required} XP · Level {level+1} unlocks soon</Text>
+        </LinearGradient>
+
+        <View style={{padding:isWide?28:14,paddingBottom:48,alignItems:'center'}}>
+        <View style={{width:'100%',maxWidth:isWide?900:undefined}}>
 
           {/* Two column layout on wide screens */}
           <View style={{flexDirection:isWide?'row':'column',gap:16,alignItems:'flex-start'}}>
@@ -685,6 +694,7 @@ export default function App() {
           </View>
 
           <Text style={{color:'#9ca3af',textAlign:'center',fontSize:12,marginTop:8}}>Made with ♻️ and 🌱</Text>
+        </View>
         </View>
       </ScrollView>
     </SafeAreaView>
