@@ -612,25 +612,30 @@ export default function App() {
                             </TouchableOpacity>
                           );
                         })}
-                        {category.id==='general'&&(
-                          <View style={{flexDirection:'row',alignItems:'center',marginTop:4,gap:4}}>
-                            <TextInput style={{...ws.input,width:44,marginBottom:0}} placeholder="🌿" value={newDeedEmoji} onChangeText={setNewDeedEmoji}/>
-                            <TextInput style={{...ws.input,flex:1,marginBottom:0}} placeholder="New deed..." value={newDeedLabel} onChangeText={setNewDeedLabel}/>
-                            <TouchableOpacity style={{backgroundColor:'#845ef7',borderRadius:8,paddingHorizontal:8,paddingVertical:8}}
-                              onPress={()=>{
-                                if (!newDeedLabel.trim()){alert('Enter a deed label');return;}
-                                const id=`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-                                setDeeds(d=>[...d,{id,label:newDeedLabel.trim(),emoji:newDeedEmoji||'✅'}]);
-                                setNewDeedLabel(''); setNewDeedEmoji('');
-                              }}>
-                              <Text style={{color:'#fff',fontWeight:'800',fontSize:12}}>+</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
                       </View>
                     );
                   })}
                 </View>
+
+                {/* ── Add Custom Deed ── */}
+                <View style={{marginBottom:12,marginTop:4}}>
+                  <Text style={{fontSize:11,fontWeight:'800',color:'#ff9f1c',marginBottom:8,textTransform:'uppercase',letterSpacing:0.8}}>My Custom Deeds</Text>
+                  <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
+                    <TextInput style={{...ws.input,width:48,marginBottom:0,textAlign:'center'}} placeholder="🌿" value={newDeedEmoji} onChangeText={setNewDeedEmoji}/>
+                    <TextInput style={{...ws.input,flex:1,marginBottom:0}} placeholder="Add your own deed..." value={newDeedLabel} onChangeText={setNewDeedLabel}/>
+                    <TouchableOpacity
+                      style={{backgroundColor:'#845ef7',borderRadius:10,paddingHorizontal:14,paddingVertical:10}}
+                      onPress={()=>{
+                        if (!newDeedLabel.trim()){alert('Enter a deed label');return;}
+                        const id=`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+                        setDeeds(d=>[...d,{id,label:newDeedLabel.trim(),emoji:newDeedEmoji||'✅'}]);
+                        setNewDeedLabel(''); setNewDeedEmoji('');
+                      }}>
+                      <Text style={{color:'#fff',fontWeight:'800',fontSize:13}}>+ Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <View style={{flexDirection:'row',alignItems:'center',marginBottom:8,gap:6}}>
                   <TextInput style={{...ws.input,flex:1,marginBottom:0}} placeholder="Time (HH:MM)" value={time} onChangeText={setTime}/>
                   <TextInput style={{...ws.input,width:80,marginBottom:0}} placeholder="MM-DD" value={date} onChangeText={setDate}/>
