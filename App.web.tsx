@@ -506,7 +506,7 @@ export default function App() {
             <View style={{flex:isWide?1:undefined,width:isWide?undefined:'100%'}}>
 
               {/* Streak Tree */}
-              <View style={ws.card}>
+              <View style={[ws.card,{backgroundColor:'#f3e8ff'}]}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
                   <Text style={ws.section}>Streak Tree</Text>
                   <Text style={{fontSize:13,color:'#6b7280',fontWeight:'600'}}>{globalStreak>0?`🔥 ${globalStreak} days`:'No streak yet'}</Text>
@@ -522,7 +522,7 @@ export default function App() {
               </View>
 
               {/* Eco Tree */}
-              <View style={ws.card}>
+              <View style={[ws.card,{backgroundColor:'#e0f2fe'}]}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
                   <View>
                     <Text style={ws.section}>🌳 Eco Tree</Text>
@@ -576,7 +576,7 @@ export default function App() {
             <View style={{flex:isWide?1:undefined,width:isWide?undefined:'100%'}}>
 
               {/* Add Reminder */}
-              <View style={ws.card}>
+              <View style={[ws.card,{backgroundColor:'#dcfce7'}]}>
                 <Text style={ws.section}>Add reminder</Text>
                 <Text style={{color:'#547a56',marginBottom:8,fontSize:13}}>
                   Choose a deed below, then set a time. ⏰{'\n'}
@@ -647,7 +647,7 @@ export default function App() {
               </View>
 
               {/* Upcoming */}
-              <View style={ws.card}>
+              <View style={[ws.card,{backgroundColor:'#fce7f3'}]}>
                 <Text style={ws.section}>Upcoming</Text>
                 {upcoming.length===0
                   ?<Text style={{color:'#9ca3af',textAlign:'center',paddingVertical:16}}>No upcoming reminders</Text>

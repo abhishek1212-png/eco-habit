@@ -605,7 +605,7 @@ export default function App() {
         if (typeof remote.globalStreak === 'number') setGlobalStreak((local) => Math.max(local, remote.globalStreak!));
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
         if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
-      }r else {
+      } else {
         await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate });
       }
     } catch (err) {
@@ -830,7 +830,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-      <ScrollView style={{ flex: 1, backgroundColor: '#f0fdf4' }}>
+      <ScrollView style={{ flex: 1 }}>
 
         {/* ── Hero Header ── */}
         <LinearGradient colors={['#011a12', '#022c22', '#064e3b']} style={styles.hero} start={[0, 0]} end={[1, 1]}>
@@ -865,10 +865,10 @@ export default function App() {
           <Text style={styles.heroXpTxt}>{progress}/{required} XP · Level {level + 1} unlocks soon</Text>
         </LinearGradient>
 
-        <View style={styles.content}>
+        <LinearGradient colors={['#f3e8ff', '#e0f2fe', '#dcfce7']} style={styles.content} start={[0, 0]} end={[1, 1]}>
 
           {/* ── Streak Tree Card ── */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: '#f3e8ff' }]}>
             <View style={styles.cardHeader}>
               <Text style={styles.section}>🔥 Streak Tree</Text>
               <View style={[styles.streakPill, globalStreak > 0 ? styles.streakPillActive : styles.streakPillEmpty]}>
@@ -903,7 +903,7 @@ export default function App() {
           </View>
 
           {/* ── Eco Tree Progress Card ── */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: '#e0f2fe' }]}>
             <Text style={styles.section}>Eco Tree Progress</Text>
             <Text style={styles.cardSubtitle}>Complete reminders in each category to grow each branch.</Text>
             <View style={styles.treeContainer}>
@@ -939,39 +939,8 @@ export default function App() {
           </View>
 
 
-          {/* ── World Clock ── */}
-          <View style={styles.card}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.section}>World Clock</Text>
-              <TouchableOpacity onPress={() => setShowAllWorld((s) => !s)} style={styles.toggleButton}>
-                <Text style={styles.toggleText}>{showAllWorld ? 'Hide' : 'Show all'}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.worldRow}>
-              {WORLD_ZONES.filter((z) => showAllWorld || z.tz === localTz).map((z) => {
-                const isLocal = z.tz === localTz;
-                return (
-                  <View
-                    key={z.tz}
-                    style={[
-                      styles.worldItem,
-                      isLocal && styles.localHighlight,
-                      { width: isTablet ? '30%' : '48%' },
-                    ]}
-                  >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={styles.worldLabel}>{z.label}</Text>
-                      {isLocal && <Text style={styles.detectedBadge}>Detected</Text>}
-                    </View>
-                    <Text style={styles.worldTime}>{fmtTime(now, z.tz)}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-
           {/* ── Add Reminder ── */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: '#dcfce7' }]}>
             <Text style={styles.section}>Add reminder</Text>
             {deedCategories.map((category) => (
               <View key={category.id} style={{ marginBottom: 12 }}>
@@ -986,7 +955,7 @@ export default function App() {
                         onPress={() => setSelectedDeed(d.id)}
                       >
                         <Text style={styles.deedEmoji}>{d.emoji}</Text>
-                        <Text style={[styles.deedLabel, active && { color: '#fff' }]}>{d.label}</Text>
+                        <Text style={[styles.deedLabel, active && { color: '#ffffff' }]}>{d.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1018,7 +987,7 @@ export default function App() {
                         onPress={() => setSelectedDeed(d.id)}
                       >
                         <Text style={styles.deedEmoji}>{d.emoji}</Text>
-                        <Text style={[styles.deedLabel, active && { color: '#fff' }]}>{d.label}</Text>
+                        <Text style={[styles.deedLabel, active && { color: '#ffffff' }]}>{d.label}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => {
@@ -1108,7 +1077,7 @@ export default function App() {
           </View>
 
           {/* ── Upcoming ── */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: '#fce7f3' }]}>
             <Text style={styles.section}>Upcoming</Text>
             {upcoming.length === 0 ? (
               <Text style={styles.empty}>No upcoming reminders</Text>
@@ -1149,7 +1118,7 @@ export default function App() {
             <Text style={styles.footerNote}>Made with ♻️ and 🌱</Text>
           </View>
 
-        </View>{/* end content */}
+        </LinearGradient>{/* end content */}
       </ScrollView>
 
       {Platform.OS !== 'web' && (
@@ -1193,18 +1162,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heroTop:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  heroLogo:      { fontSize: 16, fontWeight: '900', color: '#fff' },
-  heroSignOut:   { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  heroLogo:      { fontSize: 16, fontWeight: '900', color: '#ffffff' },
+  heroSignOut:   { backgroundColor: '#1a4a35', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: '#2d6b4f' },
   heroSignOutTxt:{ color: '#6ee7b7', fontWeight: '700', fontSize: 11 },
-  heroTagline:   { color: 'rgba(110,231,183,0.65)', fontSize: 12, marginBottom: 14 },
+  heroTagline:   { color: '#6ee7b7', fontSize: 12, marginBottom: 14 },
   heroStats:     { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   heroStat:      { flex: 1, alignItems: 'center' },
-  heroStatVal:   { color: '#fff', fontSize: 18, fontWeight: '900' },
-  heroStatLbl:   { color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '600', marginTop: 2 },
-  heroStatDiv:   { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.15)' },
-  heroXpBg:      { height: 6, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 4, overflow: 'hidden', marginBottom: 5 },
+  heroStatVal:   { color: '#ffffff', fontSize: 18, fontWeight: '900' },
+  heroStatLbl:   { color: '#4d9e7a', fontSize: 10, fontWeight: '600', marginTop: 2 },
+  heroStatDiv:   { width: 1, height: 36, backgroundColor: '#1e5c3e' },
+  heroXpBg:      { height: 6, backgroundColor: '#1a4a35', borderRadius: 4, overflow: 'hidden', marginBottom: 5 },
   heroXpFill:    { height: '100%', backgroundColor: '#4ade80', borderRadius: 4 },
-  heroXpTxt:     { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '600' },
+  heroXpTxt:     { color: '#4d9e7a', fontSize: 10, fontWeight: '600' },
 
   // ── Cards ──
   card: {
@@ -1213,15 +1182,15 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     shadowColor: '#059669',
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.1,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 5 },
-    borderWidth: 1,
-    borderColor: '#f0fdf4',
+    borderWidth: 2,
+    borderColor: '#d1fae5',
   },
   cardHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   section:       { fontSize: 15, fontWeight: '800', color: '#064e3b' },
-  cardSubtitle:  { color: '#6b7280', fontSize: 13, marginBottom: 8, lineHeight: 18 },
+  cardSubtitle:  { color: '#547a56', fontSize: 13, marginBottom: 8, lineHeight: 18 },
 
   // ── Streak pill ──
   streakPill:          { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
@@ -1255,7 +1224,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 12, paddingHorizontal: 12, marginBottom: 8,
-    backgroundColor: '#fff', borderRadius: 14,
+    backgroundColor: '#f0fdf4', borderRadius: 14,
     borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 4,
     borderTopColor: '#d1fae5', borderRightColor: '#d1fae5', borderBottomColor: '#d1fae5', borderLeftColor: '#10b981',
   },
@@ -1312,11 +1281,11 @@ const styles = StyleSheet.create({
   ampmText:       { color: '#2a6f3d', fontWeight: '700' },
   ampmTextActive: { color: '#fff' },
 
-  deedItem:       { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fff7fb', borderRadius: 22, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#f3d0f0' },
-  deedItemActive: { backgroundColor: '#ff6b6b', borderColor: '#ff6b6b' },
-  deedEmoji:      { marginRight: 6, fontSize: 16 },
-  deedLabel:      { color: '#6b3d6b', fontWeight: '700', fontSize: 12 },
-  categoryHeader: { fontSize: 11, fontWeight: '800', color: '#ff9f1c', marginBottom: 6, marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.8 },
+  deedItem:       { paddingVertical: 8, paddingHorizontal: 10, backgroundColor: '#022c22', borderRadius: 24, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: '#064e3b', width: '47%', minHeight: 40 },
+  deedItemActive: { backgroundColor: '#064e3b', borderColor: '#4ade80' },
+  deedEmoji:      { marginRight: 6, fontSize: 15, flexShrink: 0 },
+  deedLabel:      { color: '#6ee7b7', fontWeight: '800', fontSize: 11, flexShrink: 1, flexWrap: 'wrap', lineHeight: 15 },
+  categoryHeader: { fontSize: 12, fontWeight: '800', color: '#ff9f1c', marginBottom: 8, marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 },
 
   autoButton:     { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#ffd166', borderRadius: 10, justifyContent: 'center' },
   autoText:       { color: '#6b3d6b', fontWeight: '800', fontSize: 12 },
