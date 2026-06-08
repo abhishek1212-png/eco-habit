@@ -156,7 +156,8 @@ function fireWebConfetti() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [deedCategories] = useState(DEFAULT_DEED_CATEGORIES);
-  const [deeds, setDeeds] = useState(DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds));
+  const [customDeeds, setCustomDeeds] = useState<Array<{id:string;label:string;emoji:string}>>([]);
+  const deeds = [...DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds), ...customDeeds];
   const [newDeedLabel, setNewDeedLabel] = useState('');
   const [newDeedEmoji, setNewDeedEmoji] = useState('');
 
@@ -209,15 +210,17 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const [habitsStr, xpStr, storedCreds, streakStr, lastDateStr] = await Promise.all([
+        const [habitsStr, xpStr, storedCreds, streakStr, lastDateStr, customDeedsStr] = await Promise.all([
           AsyncStorage.getItem('eco_habits'),
           AsyncStorage.getItem('eco_xp'),
           AsyncStorage.getItem('eco_user_credentials'),
           AsyncStorage.getItem('eco_global_streak'),
           AsyncStorage.getItem('eco_last_activity_date'),
+          AsyncStorage.getItem('eco_custom_deeds'),
         ]);
         if (habitsStr) setHabits(JSON.parse(habitsStr));
         if (xpStr) setXp(parseInt(xpStr, 10));
+        if (customDeedsStr) { try { setCustomDeeds(JSON.parse(customDeedsStr)); } catch {} }
         if (storedCreds) {
           try {
             const c = JSON.parse(storedCreds) as Credentials;
@@ -245,10 +248,11 @@ export default function App() {
           AsyncStorage.setItem('eco_xp', String(xp)),
           AsyncStorage.setItem('eco_global_streak', String(globalStreak)),
           AsyncStorage.setItem('eco_last_activity_date', lastActivityDate ?? ''),
+          AsyncStorage.setItem('eco_custom_deeds', JSON.stringify(customDeeds)),
         ]);
       } catch {}
     })();
-  }, [habits, xp, globalStreak, lastActivityDate]);
+  }, [habits, xp, globalStreak, lastActivityDate, customDeeds]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -265,7 +269,7 @@ export default function App() {
   useEffect(() => {
     if (!firebaseUser) return;
     saveRemoteUserData(firebaseUser.uid);
-  }, [habits, xp, globalStreak, lastActivityDate, firebaseUser]);
+  }, [habits, xp, globalStreak, lastActivityDate, customDeeds, firebaseUser]);
 
   // Helpers
   const todayStr = () => {
@@ -308,13 +312,14 @@ export default function App() {
         if (typeof r.xp==='number') setXp(r.xp);
         if (typeof r.globalStreak==='number') setGlobalStreak(r.globalStreak);
         if (r.lastActivityDate) setLastActivityDate(r.lastActivityDate);
+        if (r.customDeeds) setCustomDeeds(r.customDeeds);
       } else {
         await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate });
       }
     } catch {}
   };
   const saveRemoteUserData = async (uid: string) => {
-    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate }, { merge:true }); } catch {}
+    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds }, { merge:true }); } catch {}
   };
 
   // XP system
@@ -621,18 +626,25 @@ export default function App() {
                 <View style={{marginBottom:12,marginTop:4}}>
                   <Text style={{fontSize:11,fontWeight:'800',color:'#ff9f1c',marginBottom:8,textTransform:'uppercase',letterSpacing:0.8}}>My Custom Deeds</Text>
                   {/* Show existing custom deeds as chips */}
-                  {deeds.filter(d=>!DEFAULT_DEED_CATEGORIES.flatMap(c=>c.deeds).find(x=>x.id===d.id)).length>0&&(
+                  {customDeeds.length > 0 && (
                     <View style={{flexDirection:'row',flexWrap:'wrap',marginBottom:8}}>
-                      {deeds.filter(d=>!DEFAULT_DEED_CATEGORIES.flatMap(c=>c.deeds).find(x=>x.id===d.id)).map(d=>{
+                      {customDeeds.map(d=>{
                         const active=selectedDeed===d.id;
                         return (
-                          <TouchableOpacity key={d.id}
-                            style={{paddingVertical:8,paddingHorizontal:10,borderRadius:14,marginBottom:6,marginRight:6,flexDirection:'row',alignItems:'center',
-                              backgroundColor:active?'#ddd6fe':'#ede9fe',borderWidth:1,borderColor:active?'#7c3aed':'#c4b5fd'}}
-                            onPress={()=>setSelectedDeed(d.id)}>
-                            <Text style={{marginRight:6,fontSize:14}}>{d.emoji}</Text>
-                            <Text style={{fontWeight:'700',fontSize:12,color:active?'#4c1d95':'#5b21b6'}}>{d.label}</Text>
-                          </TouchableOpacity>
+                          <View key={d.id} style={{flexDirection:'row',alignItems:'center',marginBottom:6,marginRight:6}}>
+                            <TouchableOpacity
+                              style={{paddingVertical:8,paddingHorizontal:10,borderRadius:14,flexDirection:'row',alignItems:'center',
+                                backgroundColor:active?'#ddd6fe':'#ede9fe',borderWidth:1,borderColor:active?'#7c3aed':'#c4b5fd'}}
+                              onPress={()=>setSelectedDeed(d.id)}>
+                              <Text style={{marginRight:6,fontSize:14}}>{d.emoji}</Text>
+                              <Text style={{fontWeight:'700',fontSize:12,color:active?'#4c1d95':'#5b21b6'}}>{d.label}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={()=>{if(selectedDeed===d.id)setSelectedDeed(null);setCustomDeeds(prev=>prev.filter(x=>x.id!==d.id));}}
+                              style={{marginLeft:4,paddingHorizontal:6,paddingVertical:4,backgroundColor:'#fee2e2',borderRadius:8}}>
+                              <Text style={{color:'#ef4444',fontWeight:'800',fontSize:12}}>✕</Text>
+                            </TouchableOpacity>
+                          </View>
                         );
                       })}
                     </View>
@@ -645,7 +657,7 @@ export default function App() {
                       onPress={()=>{
                         if (!newDeedLabel.trim()){alert('Enter a deed label');return;}
                         const id=`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-                        setDeeds(d=>[...d,{id,label:newDeedLabel.trim(),emoji:newDeedEmoji||'✅'}]);
+                        setCustomDeeds(prev=>[...prev,{id,label:newDeedLabel.trim(),emoji:newDeedEmoji||'✅'}]);
                         setSelectedDeed(id);
                         setNewDeedLabel(''); setNewDeedEmoji('');
                       }}>
