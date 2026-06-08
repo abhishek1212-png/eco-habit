@@ -590,7 +590,7 @@ export default function App() {
                 <Text style={{color:'#547a56',marginBottom:8,fontSize:13}}>
                   Choose a deed below or make your own, then set a time. ⏰{'\n'}
                   <Text style={{color:'#ff9f1c',fontWeight:'700'}}>Tip: press Auto if due tomorrow.</Text>
-                </Text>
+                </Tex
                 <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between'}}>
                   {deedCategories.map(category=>{
                     const cc = CAT_COLORS[category.id]??CAT_COLORS.general;
