@@ -654,24 +654,28 @@ export default function App() {
                   </View>
                 </View>
 
+                {/* Row 1: time + AM/PM */}
                 <View style={{flexDirection:'row',alignItems:'center',marginBottom:8,gap:6}}>
                   <TextInput style={{...ws.input,flex:1,marginBottom:0}} placeholder="Time (HH:MM)" value={time} onChangeText={setTime}/>
-                  <TextInput style={{...ws.input,width:80,marginBottom:0}} placeholder="MM-DD" value={date} onChangeText={setDate}/>
-                  <TouchableOpacity style={{paddingHorizontal:10,paddingVertical:8,backgroundColor:'#ffd166',borderRadius:8}}
+                  <View style={{flexDirection:'row',gap:4}}>
+                    {(['AM','PM'] as const).map(ap=>(
+                      <TouchableOpacity key={ap} style={{paddingHorizontal:12,paddingVertical:8,borderRadius:8,backgroundColor:ampm===ap?'#06c39a':'#fff6f0',borderWidth:1,borderColor:ampm===ap?'#06c39a':'#d1fae5'}}
+                        onPress={()=>setAmpm(ap)}>
+                        <Text style={{color:ampm===ap?'#fff':'#2a6f3d',fontWeight:'700'}}>{ap}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+                {/* Row 2: date + auto */}
+                <View style={{flexDirection:'row',alignItems:'center',marginBottom:8,gap:6}}>
+                  <TextInput style={{...ws.input,flex:1,marginBottom:0}} placeholder="Date (MM-DD)" value={date} onChangeText={setDate}/>
+                  <TouchableOpacity style={{paddingHorizontal:14,paddingVertical:8,backgroundColor:'#ffd166',borderRadius:8}}
                     onPress={()=>{
                       const next=computeNextDateString(`${time||'08:00'} ${ampm}`);
                       if (!next){alert('Check time format');return;}setDate(next);
                     }}>
                     <Text style={{color:'#6b3d6b',fontWeight:'700',fontSize:12}}>Auto</Text>
                   </TouchableOpacity>
-                  <View style={{flexDirection:'row',gap:4}}>
-                    {(['AM','PM'] as const).map(ap=>(
-                      <TouchableOpacity key={ap} style={{paddingHorizontal:8,paddingVertical:6,borderRadius:6,backgroundColor:ampm===ap?'#06c39a':'#fff6f0'}}
-                        onPress={()=>setAmpm(ap)}>
-                        <Text style={{color:ampm===ap?'#fff':'#2a6f3d',fontWeight:'700'}}>{ap}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
                 </View>
                 <TouchableOpacity style={{backgroundColor:'#845ef7',paddingVertical:10,borderRadius:10,alignItems:'center'}} onPress={add}>
                   <Text style={{color:'#fff',fontWeight:'800'}}>Add Reminder</Text>
