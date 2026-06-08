@@ -735,7 +735,6 @@ export default function App() {
           <Text style={{color:'#9ca3af',textAlign:'center',fontSize:12,marginTop:8}}>Made with ♻️ and 🌱</Text>
         </View>
         </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
