@@ -587,9 +587,9 @@ export default function App() {
               {/* Add Reminder */}
               <View style={[ws.card,{backgroundColor:'#dcfce7'}]}>
                 <Text style={ws.section}>Add reminder</Text>
-                <Text style={{color:'#547a56',marginBottom:8,fontSize:13,fontWeight:'700'}}>
-                  Choose a deed below or add a custom deed, then set a time. ⏰{'\n'}
-                  <Text style={{color:'#ff9f1c',fontWeight:'800'}}>Tip: press Auto if due tomorrow.</Text>
+                <Text style={{color:'#547a56',marginBottom:8,fontSize:13}}>
+                  Choose a deed below or make your own, then set a time. ⏰{'\n'}
+                  <Text style={{color:'#ff9f1c',fontWeight:'700'}}>Tip: press Auto if due tomorrow.</Text>
                 </Text>
                 <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between'}}>
                   {deedCategories.map(category=>{
@@ -620,6 +620,23 @@ export default function App() {
                 {/* ── Add Custom Deed ── */}
                 <View style={{marginBottom:12,marginTop:4}}>
                   <Text style={{fontSize:11,fontWeight:'800',color:'#ff9f1c',marginBottom:8,textTransform:'uppercase',letterSpacing:0.8}}>My Custom Deeds</Text>
+                  {/* Show existing custom deeds as chips */}
+                  {deeds.filter(d=>!DEFAULT_DEED_CATEGORIES.flatMap(c=>c.deeds).find(x=>x.id===d.id)).length>0&&(
+                    <View style={{flexDirection:'row',flexWrap:'wrap',marginBottom:8}}>
+                      {deeds.filter(d=>!DEFAULT_DEED_CATEGORIES.flatMap(c=>c.deeds).find(x=>x.id===d.id)).map(d=>{
+                        const active=selectedDeed===d.id;
+                        return (
+                          <TouchableOpacity key={d.id}
+                            style={{paddingVertical:8,paddingHorizontal:10,borderRadius:14,marginBottom:6,marginRight:6,flexDirection:'row',alignItems:'center',
+                              backgroundColor:active?'#ddd6fe':'#ede9fe',borderWidth:1,borderColor:active?'#7c3aed':'#c4b5fd'}}
+                            onPress={()=>setSelectedDeed(d.id)}>
+                            <Text style={{marginRight:6,fontSize:14}}>{d.emoji}</Text>
+                            <Text style={{fontWeight:'700',fontSize:12,color:active?'#4c1d95':'#5b21b6'}}>{d.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
                   <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
                     <TextInput style={{...ws.input,width:48,marginBottom:0,textAlign:'center'}} placeholder="🌿" value={newDeedEmoji} onChangeText={setNewDeedEmoji}/>
                     <TextInput style={{...ws.input,flex:1,marginBottom:0}} placeholder="Add your own deed..." value={newDeedLabel} onChangeText={setNewDeedLabel}/>
@@ -629,6 +646,7 @@ export default function App() {
                         if (!newDeedLabel.trim()){alert('Enter a deed label');return;}
                         const id=`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
                         setDeeds(d=>[...d,{id,label:newDeedLabel.trim(),emoji:newDeedEmoji||'✅'}]);
+                        setSelectedDeed(id);
                         setNewDeedLabel(''); setNewDeedEmoji('');
                       }}>
                       <Text style={{color:'#fff',fontWeight:'800',fontSize:13}}>+ Add</Text>
