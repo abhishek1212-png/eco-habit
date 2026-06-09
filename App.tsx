@@ -32,7 +32,7 @@ import {
   onAuthStateChanged,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 
 type Habit = {
   id: string;
@@ -370,9 +370,8 @@ export default function App() {
 
   // ── Auth state ────────────────────────────────────────────────────────────────
   const [loggedIn, setLoggedIn] = useState(false);
-  const [login, setLogin] = useState<LoginState>({ email: '', password: '' });
-  const [storedCredentials, setStoredCredentials] = useState<Credentials | null>(null);
-  const [userEmail, setUserEmail] = useState('');
+  const [login, setLogin] = useState<{ username: string; password: string }>({ username: '', password: '' });
+  const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -382,7 +381,9 @@ export default function App() {
   const [streakBroken, setStreakBroken] = useState(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────────
-  const [showAllWorld, setShowAllWorld] = useState(false);
+  const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
+  const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
+  const [lbLoading, setLbLoading] = useState(false);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -495,11 +496,12 @@ export default function App() {
         if (storedCreds) {
           try {
             const creds = JSON.parse(storedCreds) as Credentials;
-            setStoredCredentials({ email: creds.email });
-            setLogin({ email: creds.email, password: '' });
-            setUserEmail(creds.email);
+            const uname = creds.email.replace('@eco-habit.app','');
+            setLogin({ username: uname, password: '' });
           } catch {}
         }
+        const storedUsername = await AsyncStorage.getItem('eco_username');
+        if (storedUsername) setUsername(storedUsername);
 
         // Global streak — check for break on load
         const savedStreak = streakStr ? parseInt(streakStr, 10) : 0;
@@ -550,7 +552,6 @@ export default function App() {
       if (user) {
         setFirebaseUser(user);
         setLoggedIn(true);
-        setUserEmail(user.email || '');
         await loadRemoteUserData(user.uid);
       } else {
         setFirebaseUser(null);
@@ -737,43 +738,65 @@ export default function App() {
   };
 
   const handleLogin = async () => {
-    const email = login.email.trim().toLowerCase();
+    const uname = login.username.trim().toLowerCase();
     const password = login.password;
-    if (!email || !password) { alert('Enter both email and password'); return; }
-    if (!EMAIL_PATTERN.test(email)) { alert('Please enter a valid email address'); return; }
+    if (!uname || !password) { alert('Enter username and password'); return; }
+    if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore only'); return; }
+    const email = `${uname}@eco-habit.app`;
     try {
       let userCredential;
       try {
         userCredential = await signInWithEmailAndPassword(auth, email, password);
       } catch (err: any) {
-        if (err.code === 'auth/user-not-found') {
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
           userCredential = await createUserWithEmailAndPassword(auth, email, password);
         } else {
-          alert('Invalid email or password');
+          alert('Wrong password for that username.');
           return;
         }
       }
       const user = userCredential.user;
       await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
-      setStoredCredentials({ email });
-      setUserEmail(email);
-      setLogin({ email, password: '' });
+      await AsyncStorage.setItem('eco_username', uname);
+      setUsername(uname);
+      setLogin({ username: uname, password: '' });
       setLoggedIn(true);
       setFirebaseUser(user);
       await loadRemoteUserData(user.uid);
     } catch (err) {
-      alert('Unable to sign in. Please check your credentials and network.');
+      alert('Unable to sign in. Check your network.');
     }
+  };
+
+  const fetchLeaderboard = async () => {
+    setLbLoading(true);
+    try {
+      const snap = await getDocs(collection(db, 'eco_users'));
+      const users = snap.docs
+        .map(d => {
+          const data = d.data() as any;
+          const totalXp = data.xp || 0;
+          let lvl = 1, acc = 0;
+          while (true) { const n = 100+(lvl-1)*20; if (totalXp<acc+n) break; acc+=n; lvl++; }
+          return { username: data.username || 'Eco Warrior', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+        })
+        .sort((a,b) => b.xp - a.xp)
+        .slice(0, 50)
+        .map((u, i) => ({ ...u, rank: i+1 }));
+      setLeaderboard(users);
+    } catch {}
+    setLbLoading(false);
   };
 
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
-    setStoredCredentials(null);
-    setLogin({ email: '', password: '' });
-    setUserEmail('');
+    AsyncStorage.removeItem('eco_username').catch(() => {});
+    setLogin({ username: '', password: '' });
+    setUsername('');
     setLoggedIn(false);
     setFirebaseUser(null);
+    setActiveTab('home');
   };
 
   // ── Login Screen ──────────────────────────────────────────────────────────────
@@ -792,13 +815,13 @@ export default function App() {
               <Text style={styles.loginCardTitle}>Welcome back 👋</Text>
               <TextInput
                 style={styles.loginInput}
-                placeholder="Email address"
+                placeholder="Username (e.g. sidpid)"
                 placeholderTextColor="rgba(110,231,183,0.6)"
-                value={login.email}
-                onChangeText={(v) => setLogin((p) => ({ ...p, email: v }))}
+                value={login.username}
+                onChangeText={(v) => setLogin((p) => ({ ...p, username: v }))}
                 autoCapitalize="none"
-                keyboardType="email-address"
-                textContentType="emailAddress"
+                autoCorrect={false}
+                textContentType="username"
               />
               <TextInput
                 style={styles.loginInput}
@@ -835,7 +858,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
           <Text style={styles.heroTagline}>
-            {userEmail?.split('@')[0] || 'Eco Warrior'} · {globalStreak > 0 ? `🌱 ${globalStreak}-day streak!` : '🌱 Start your journey!'}
+            {username || 'Eco Warrior'} · {globalStreak > 0 ? `🌱 ${globalStreak}-day streak!` : '🌱 Start your journey!'}
           </Text>
           <View style={styles.heroStats}>
             <View style={styles.heroStat}>

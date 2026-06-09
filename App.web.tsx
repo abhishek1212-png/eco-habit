@@ -37,14 +37,14 @@ import {
   sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Habit = {
   id: string; title: string; time: string; completed: boolean;
   streak: number; lastCompletedDate: string | null;
 };
-type LoginState = { email: string; password: string };
+type LoginState = { username: string; password: string };
 type Credentials = { email: string; password?: string };
 
 const XP_PER = 10;
@@ -169,10 +169,12 @@ export default function App() {
   const [xp, setXp] = useState(0);
 
   const [loggedIn, setLoggedIn] = useState(false);
-  const [login, setLogin] = useState<LoginState>({ email: '', password: '' });
-  const [userEmail, setUserEmail] = useState('');
+  const [login, setLogin] = useState<LoginState>({ username: '', password: '' });
+  const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [resetSent, setResetSent] = useState(false);
+  const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
+  const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
+  const [lbLoading, setLbLoading] = useState(false);
 
   const [globalStreak, setGlobalStreak] = useState(0);
   const [lastActivityDate, setLastActivityDate] = useState<string | null>(null);
@@ -210,22 +212,24 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const [habitsStr, xpStr, storedCreds, streakStr, lastDateStr, customDeedsStr] = await Promise.all([
+        const [habitsStr, xpStr, storedCreds, streakStr, lastDateStr, customDeedsStr, storedUsername] = await Promise.all([
           AsyncStorage.getItem('eco_habits'),
           AsyncStorage.getItem('eco_xp'),
           AsyncStorage.getItem('eco_user_credentials'),
           AsyncStorage.getItem('eco_global_streak'),
           AsyncStorage.getItem('eco_last_activity_date'),
           AsyncStorage.getItem('eco_custom_deeds'),
+          AsyncStorage.getItem('eco_username'),
         ]);
         if (habitsStr) setHabits(JSON.parse(habitsStr));
         if (xpStr) setXp(parseInt(xpStr, 10));
         if (customDeedsStr) { try { setCustomDeeds(JSON.parse(customDeedsStr)); } catch {} }
+        if (storedUsername) setUsername(storedUsername);
         if (storedCreds) {
           try {
             const c = JSON.parse(storedCreds) as Credentials;
-            setLogin({ email: c.email, password: '' });
-            setUserEmail(c.email);
+            const uname = c.email.replace('@eco-habit.app','');
+            setLogin({ username: uname, password: '' });
           } catch {}
         }
         const savedStreak = streakStr ? parseInt(streakStr, 10) : 0;
@@ -257,7 +261,7 @@ export default function App() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setFirebaseUser(user); setLoggedIn(true); setUserEmail(user.email || '');
+        setFirebaseUser(user); setLoggedIn(true);
         await loadRemoteUserData(user.uid);
       } else {
         setFirebaseUser(null); setLoggedIn(false);
@@ -313,13 +317,34 @@ export default function App() {
         if (typeof r.globalStreak==='number') setGlobalStreak(r.globalStreak);
         if (r.lastActivityDate) setLastActivityDate(r.lastActivityDate);
         if (r.customDeeds) setCustomDeeds(r.customDeeds);
+        if (r.username) setUsername(r.username);
       } else {
         await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate });
       }
     } catch {}
   };
   const saveRemoteUserData = async (uid: string) => {
-    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds }, { merge:true }); } catch {}
+    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds, username }, { merge:true }); } catch {}
+  };
+
+  const fetchLeaderboard = async () => {
+    setLbLoading(true);
+    try {
+      const snap = await getDocs(collection(db,'eco_users'));
+      const users = snap.docs
+        .map(d => {
+          const data = d.data() as any;
+          const totalXp = data.xp || 0;
+          let lvl=1, acc=0;
+          while (true) { const n=100+(lvl-1)*20; if (totalXp<acc+n) break; acc+=n; lvl++; }
+          return { username: data.username || 'Eco Warrior', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+        })
+        .sort((a,b)=>b.xp-a.xp)
+        .slice(0,50)
+        .map((u,i)=>({...u, rank:i+1}));
+      setLeaderboard(users);
+    } catch {}
+    setLbLoading(false);
   };
 
   // XP system
@@ -386,24 +411,26 @@ export default function App() {
   const clearCompleted = () => setHabits(s=>s.filter(h=>!h.completed));
 
   const handleLogin = async () => {
-    const email = login.email.trim().toLowerCase();
+    const uname = login.username.trim().toLowerCase();
     const password = login.password;
-    if (!email||!password) { alert('Enter both email and password'); return; }
-    if (!EMAIL_PATTERN.test(email)) { alert('Please enter a valid email'); return; }
+    if (!uname||!password) { alert('Enter username and password'); return; }
+    if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore only'); return; }
+    const email = `${uname}@eco-habit.app`;
     try {
       let cred;
       try { cred = await signInWithEmailAndPassword(auth,email,password); }
       catch (e: any) {
         try { cred = await createUserWithEmailAndPassword(auth,email,password); }
         catch (e2: any) {
-          if (e2.code==='auth/email-already-in-use') alert('Wrong password. Try Forgot Password.');
+          if (e2.code==='auth/email-already-in-use') alert('Wrong password for that username.');
           else alert('Unable to sign in. Check your details.');
           return;
         }
       }
       const user = cred.user;
       await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({email}));
-      setUserEmail(email); setLogin({email,password:''}); setLoggedIn(true); setFirebaseUser(user);
+      await AsyncStorage.setItem('eco_username', uname);
+      setUsername(uname); setLogin({username:uname,password:''}); setLoggedIn(true); setFirebaseUser(user);
       await loadRemoteUserData(user.uid);
     } catch { alert('Unable to sign in. Check your network.'); }
   };
@@ -411,14 +438,9 @@ export default function App() {
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(()=>{});
-    setLogin({email:'',password:''}); setUserEmail(''); setLoggedIn(false); setFirebaseUser(null);
-  };
-
-  const handleForgotPassword = async () => {
-    const email = login.email.trim().toLowerCase();
-    if (!email) { alert('Enter your email first.'); return; }
-    try { await sendPasswordResetEmail(auth,email); setResetSent(true); }
-    catch { alert('Could not send reset email.'); }
+    AsyncStorage.removeItem('eco_username').catch(()=>{});
+    setLogin({username:'',password:''}); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
+    setActiveTab('home');
   };
 
   // ── Login Screen ──────────────────────────────────────────────────────────
@@ -446,9 +468,9 @@ export default function App() {
               </Text>
               <TextInput
                 style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:12,fontSize:15}}
-                placeholder="Email address" placeholderTextColor="#6b9e80"
-                value={login.email} onChangeText={v=>setLogin(p=>({...p,email:v}))}
-                autoCapitalize="none" keyboardType="email-address"
+                placeholder="Username (e.g. sidpid)" placeholderTextColor="#6b9e80"
+                value={login.username} onChangeText={v=>setLogin(p=>({...p,username:v}))}
+                autoCapitalize="none" autoCorrect={false}
               />
               <TextInput
                 style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:12,fontSize:15}}
@@ -456,16 +478,13 @@ export default function App() {
                 value={login.password} onChangeText={v=>setLogin(p=>({...p,password:v}))}
                 secureTextEntry
               />
+              <Text style={{color:'#86efac',fontSize:12,textAlign:'center',marginBottom:12,opacity:0.7}}>New username = new account · same username = login</Text>
               <TouchableOpacity
                 style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:15,alignItems:'center'}}
                 onPress={handleLogin}
               >
                 <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>Login / Sign up</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleForgotPassword} style={{alignSelf:'center',marginTop:12,padding:8}}>
-                <Text style={{color:'#86efac',fontWeight:'600',fontSize:14}}>Forgot Password?</Text>
-              </TouchableOpacity>
-              {resetSent && <Text style={{color:'#86efac',textAlign:'center',marginTop:8,fontWeight:'600'}}>✅ Reset email sent!</Text>}
             </Animated.View>
           </View>
         </LinearGradient>
@@ -477,7 +496,56 @@ export default function App() {
   return (
     <SafeAreaView style={{flex:1,backgroundColor:'#011a12',minHeight:'100vh' as any}}>
       <StatusBar style="light"/>
-      <ScrollView style={{flex:1,minHeight:'100vh' as any}}>
+
+      {/* Tab bar */}
+      <View style={{flexDirection:'row',backgroundColor:'#011a12',borderTopWidth:1,borderTopColor:'#1e5c3e',position:'absolute' as any,bottom:0,left:0,right:0,zIndex:100,paddingBottom:8,paddingTop:8}}>
+        {([
+          {id:'home',      label:'🏠 Home',        },
+          {id:'leaderboard',label:'🏆 Leaderboard'},
+        ] as const).map(tab=>(
+          <TouchableOpacity key={tab.id} style={{flex:1,alignItems:'center',paddingVertical:6}}
+            onPress={()=>{
+              setActiveTab(tab.id);
+              if(tab.id==='leaderboard') fetchLeaderboard();
+            }}>
+            <Text style={{fontSize:13,fontWeight:'700',color:activeTab===tab.id?'#4ade80':'#4d9e7a'}}>{tab.label}</Text>
+            {activeTab===tab.id&&<View style={{width:24,height:3,backgroundColor:'#4ade80',borderRadius:2,marginTop:3}}/>}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Leaderboard tab */}
+      {activeTab==='leaderboard'&&(
+        <ScrollView style={{flex:1,marginBottom:60}}>
+          <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{paddingTop:18,paddingBottom:26,paddingHorizontal:20,marginBottom:4}} start={[0,0]} end={[1,1]}>
+            <Text style={{fontSize:22,fontWeight:'900',color:'#fff',textAlign:'center'}}>🏆 Leaderboard</Text>
+            <Text style={{color:'#6ee7b7',fontSize:12,textAlign:'center',marginTop:4}}>Top Eco Warriors worldwide</Text>
+          </LinearGradient>
+          <View style={{padding:16,marginBottom:60}}>
+            {lbLoading&&<Text style={{color:'#9ca3af',textAlign:'center',marginTop:40,fontSize:15}}>Loading...</Text>}
+            {!lbLoading&&leaderboard.length===0&&<Text style={{color:'#9ca3af',textAlign:'center',marginTop:40,fontSize:15}}>No data yet. Be the first! 🌱</Text>}
+            {leaderboard.map((u,i)=>{
+              const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+              const isMe  = u.username===username;
+              return (
+                <View key={i} style={{flexDirection:'row',alignItems:'center',backgroundColor:isMe?'#dcfce7':'#f9fafb',borderRadius:16,padding:14,marginBottom:10,borderWidth:isMe?2:0,borderColor:'#22c55e'}}>
+                  <Text style={{fontSize:20,width:40,textAlign:'center',fontWeight:'900'}}>{medal}</Text>
+                  <View style={{flex:1,marginLeft:8}}>
+                    <Text style={{fontWeight:'800',fontSize:15,color:'#111827'}}>{u.username}{isMe?' (you)':''}</Text>
+                    <Text style={{color:'#6b7280',fontSize:12,marginTop:2}}>Level {u.level} · 🔥 {u.streak} day streak</Text>
+                  </View>
+                  <View style={{alignItems:'flex-end'}}>
+                    <Text style={{fontWeight:'900',fontSize:16,color:'#059669'}}>{u.xp} XP</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Home tab */}
+      {activeTab==='home'&&<ScrollView style={{flex:1,minHeight:'100vh' as any,marginBottom:60}}>
 
         {/* ── Hero Header ── */}
         <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{paddingTop:18,paddingBottom:26,paddingHorizontal:isWide?40:20,borderBottomLeftRadius:28,borderBottomRightRadius:28,marginBottom:4}} start={[0,0]} end={[1,1]}>
@@ -488,7 +556,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
           <Text style={{color:'#6ee7b7',fontSize:12,marginBottom:14}}>
-            {userEmail?.split('@')[0]||'Eco Warrior'} · {globalStreak>0?`🌱 ${globalStreak}-day streak!`:'🌱 Start your journey!'}
+            {username||'Eco Warrior'} · {globalStreak>0?`🌱 ${globalStreak}-day streak!`:'🌱 Start your journey!'}
           </Text>
           <View style={{flexDirection:'row',alignItems:'center',marginBottom:16}}>
             <View style={{flex:1,alignItems:'center'}}>
@@ -738,7 +806,8 @@ export default function App() {
           <Text style={{color:'#9ca3af',textAlign:'center',fontSize:12,marginTop:8}}>Made with ♻️ and 🌱</Text>
         </View>
         </View>
-      </ScrollView>
+      </ScrollView>}
+
     </SafeAreaView>
   );
 }
