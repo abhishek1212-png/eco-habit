@@ -535,11 +535,11 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Eco Tree */}
+              {/* Eco Tree Dashboard */}
               <View style={[ws.card,{backgroundColor:'#e0f2fe'}]}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
                   <View>
-                    <Text style={ws.section}>🌳 Eco Tree</Text>
+                    <Text style={ws.section}>🌳 Eco Tree Dashboard</Text>
                     <Text style={{fontSize:12,color:'#6b7280',marginTop:2}}>{treeStage} · {Math.round(treeCompletion*100)}%</Text>
                   </View>
                   <View style={{width:46,height:46,borderRadius:23,backgroundColor:'#0b8457',alignItems:'center',justifyContent:'center'}}>
@@ -568,6 +568,9 @@ export default function App() {
                           <View style={{height:'100%',width:`${pct}%`,backgroundColor:cc.pill,borderRadius:4}}/>
                         </View>
                         <Text style={{fontSize:11,fontWeight:'700',color:cc.text,opacity:0.7}}>{cat.total?`${cat.completed}/${cat.total}`:'No habits'}</Text>
+                        {cat.total>0&&<Text style={{fontSize:10,color:cc.text,opacity:0.6,marginTop:3,fontWeight:'600'}}>
+                          {cat.completed===0?'Not started 🌱':cat.completed<cat.total?'In progress 🌿':'Complete! 🎉'}
+                        </Text>}
                         {expanded&&<View style={{width:'100%',marginTop:10,backgroundColor:'rgba(255,255,255,0.6)',borderRadius:10,padding:8}}>
                           {catHabits.length===0
                             ?<Text style={{fontSize:11,color:'#9ca3af',fontStyle:'italic',textAlign:'center'}}>Add habits in reminders!</Text>

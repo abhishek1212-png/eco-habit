@@ -423,14 +423,8 @@ export default function App() {
   const percentage = progress;
 
   const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const WORLD_ZONES: { label: string; tz: string }[] = [
-    { label: 'Local',    tz: localTz },
-    { label: 'UTC',      tz: 'UTC' },
-    { label: 'New York', tz: 'America/New_York' },
-    { label: 'London',   tz: 'Europe/London' },
-    { label: 'Tokyo',    tz: 'Asia/Tokyo' },
-    { label: 'Sydney',   tz: 'Australia/Sydney' },
-  ];
+  
+  
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -904,7 +898,7 @@ export default function App() {
 
           {/* ── Eco Tree Progress Card ── */}
           <View style={[styles.card, { backgroundColor: '#e0f2fe' }]}>
-            <Text style={styles.section}>Eco Tree Progress</Text>
+            <Text style={styles.section}>🌳 Eco Tree Dashboard</Text>
             <Text style={styles.cardSubtitle}>Complete reminders in each category to grow each branch.</Text>
             <View style={styles.treeContainer}>
               {categoryProgress.map((category, index) => {
@@ -927,6 +921,11 @@ export default function App() {
                           ? `${category.completed}/${category.total} reminders`
                           : 'No reminders yet'}
                       </Text>
+                      {category.total > 0 && (
+                        <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2, fontWeight: '600' }}>
+                          {category.completed === 0 ? 'Not started 🌱' : category.completed < category.total ? 'In progress 🌿' : 'Complete! 🎉'}
+                        </Text>
+                      )}
                       <View style={styles.treeProgressBar}>
                         <View style={[styles.treeProgressFill, { width: `${completionRatio}%` }]} />
                       </View>
@@ -938,6 +937,40 @@ export default function App() {
             <Text style={styles.treeStatus}>Tree stage: {treeStage}</Text>
           </View>
 
+
+          {/* ── Dashboard ── */}
+          <View style={[styles.card, { backgroundColor: '#f0fdf4' }]}>
+            <Text style={styles.section}>📊 Dashboard</Text>
+            <Text style={styles.cardSubtitle}>Your eco impact at a glance</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flex: 1, minWidth: 130, backgroundColor: '#dcfce7', borderRadius: 14, padding: 12 }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#15803d' }}>{habits.length}</Text>
+                <Text style={{ fontSize: 12, color: '#166534', fontWeight: '700' }}>Total Reminders</Text>
+                <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{habits.filter(h => h.completed).length} done · {habits.filter(h => !h.completed).length} pending</Text>
+              </View>
+              <View style={{ flex: 1, minWidth: 130, backgroundColor: '#fef9c3', borderRadius: 14, padding: 12 }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#92400e' }}>🔥 {globalStreak}</Text>
+                <Text style={{ fontSize: 12, color: '#78350f', fontWeight: '700' }}>Day Streak</Text>
+                <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{globalStreak === 0 ? 'Start today!' : globalStreak < 7 ? 'Keep going!' : globalStreak < 30 ? 'Amazing! 🌟' : 'Legendary! 🏆'}</Text>
+              </View>
+              <View style={{ flex: 1, minWidth: 130, backgroundColor: '#e0f2fe', borderRadius: 14, padding: 12 }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#0369a1' }}>⭐ {level}</Text>
+                <Text style={{ fontSize: 12, color: '#0c4a6e', fontWeight: '700' }}>Eco Level</Text>
+                <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{progress}/{required} XP to next</Text>
+              </View>
+              <View style={{ flex: 1, minWidth: 130, backgroundColor: '#f3e8ff', borderRadius: 14, padding: 12 }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#6d28d9' }}>{xp} XP</Text>
+                <Text style={{ fontSize: 12, color: '#4c1d95', fontWeight: '700' }}>Lifetime XP</Text>
+                <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{xp === 0 ? 'Just started 🌱' : xp < 100 ? 'Growing 🌿' : xp < 500 ? 'Thriving 🌳' : 'Eco Hero 🌍'}</Text>
+              </View>
+            </View>
+            <View style={{ marginTop: 10, backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 10, padding: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontWeight: '700', color: '#374151', fontSize: 13 }}>Today's Progress</Text>
+              <Text style={{ color: '#059669', fontWeight: '800', fontSize: 13 }}>
+                {habits.filter(h => h.lastCompletedDate === todayStr()).length}/{habits.length} done
+              </Text>
+            </View>
+          </View>
 
           {/* ── Add Reminder ── */}
           <View style={[styles.card, { backgroundColor: '#dcfce7' }]}>
