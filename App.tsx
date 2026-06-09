@@ -1025,6 +1025,40 @@ export default function App() {
             </Text>
           </View>
 
+          {/* ── Carbon Impact ── */}
+          {(() => {
+            const allDeeds  = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
+            const completed = habits.filter(h => h.completed);
+            const totalKg   = calcCarbonKg(completed, allDeeds);
+            const badge     = totalKg === 0 ? 'Keep going! 💪' : totalKg < 2 ? 'Nice start! 🌱' : totalKg < 10 ? 'Eco Hero! 🌿' : totalKg < 30 ? 'Super Green! 🌳' : 'Earth Champion! 🌍';
+            return (
+              <View style={[styles.card, { backgroundColor: '#ecfdf5', borderWidth: 2, borderColor: '#6ee7b7' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={styles.section}>🌍 Planet Impact</Text>
+                  <View style={{ backgroundColor: '#059669', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>{badge}</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 28, fontWeight: '900', color: '#059669', textAlign: 'center' }}>{totalKg.toFixed(2)} kg CO₂</Text>
+                <Text style={{ fontSize: 13, color: '#047857', textAlign: 'center', marginBottom: 8 }}>saved so far 🌱</Text>
+                {totalKg === 0
+                  ? <Text style={{ color: '#9ca3af', textAlign: 'center', fontStyle: 'italic', fontSize: 12 }}>Complete habits to see your impact!</Text>
+                  : DEFAULT_DEED_CATEGORIES.map(cat => {
+                      const kg = calcCarbonKg(completed.filter(h => cat.deeds.map(d => d.label).includes(h.title)), cat.deeds);
+                      if (kg === 0) return null;
+                      return (
+                        <View key={cat.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                          <Text style={{ fontSize: 16, width: 24 }}>{cat.deeds[0]?.emoji}</Text>
+                          <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#374151' }}>{cat.name}</Text>
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#059669' }}>{kg.toFixed(2)} kg ✓</Text>
+                        </View>
+                      );
+                    })
+                }
+              </View>
+            );
+          })()}
+
           {/* ── Eco Tree Progress Card ── */}
           <View style={[styles.card, { backgroundColor: '#e0f2fe' }]}>
             <Text style={styles.section}>📊 Dashboard</Text>
@@ -1067,56 +1101,6 @@ export default function App() {
           </View>
 
 
-          {/* ── Carbon Impact Panel ── */}
-          {(() => {
-            const allDeeds  = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
-            const completed = habits.filter(h => h.completed);
-            const totalKg   = calcCarbonKg(completed, allDeeds);
-            const trees     = (totalKg / 21).toFixed(1);
-            const carKm     = Math.round(totalKg / 0.21);
-            const badge     = totalKg === 0 ? 'Keep going! 💪' : totalKg < 2 ? 'Nice start! 🌱' : totalKg < 10 ? 'Eco Hero! 🌿' : totalKg < 30 ? 'Super Green! 🌳' : 'Earth Champion! 🌍';
-            return (
-              <View style={[styles.card, { backgroundColor: '#ecfdf5', borderWidth: 2, borderColor: '#6ee7b7' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <Text style={styles.section}>🌍 Your Planet Impact</Text>
-                  <View style={{ backgroundColor: '#059669', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
-                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>{badge}</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardSubtitle}>Every habit you complete helps the planet! 🌱</Text>
-
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                  {[
-                    { icon: '🌿', label: 'Good deeds', value: String(completed.length), bg: '#dcfce7' },
-                    { icon: '🌳', label: 'Trees worth', value: trees, bg: '#d1fae5' },
-                    { icon: '🚗', label: 'Car km saved', value: String(carKm), bg: '#e0f2fe' },
-                    { icon: '🌍', label: 'CO₂ saved (kg)', value: totalKg.toFixed(1), bg: '#f3e8ff' },
-                  ].map(s => (
-                    <View key={s.label} style={{ flex: 1, minWidth: 130, backgroundColor: s.bg, borderRadius: 14, padding: 12, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 26 }}>{s.icon}</Text>
-                      <Text style={{ fontSize: 20, fontWeight: '900', color: '#064e3b', marginTop: 4 }}>{s.value}</Text>
-                      <Text style={{ fontSize: 11, color: '#374151', textAlign: 'center', marginTop: 2, fontWeight: '600' }}>{s.label}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                {totalKg === 0
-                  ? <Text style={{ color: '#9ca3af', textAlign: 'center', fontStyle: 'italic', fontSize: 13 }}>Complete your first habit to see your impact! 🌟</Text>
-                  : DEFAULT_DEED_CATEGORIES.map(cat => {
-                      const kg = calcCarbonKg(completed.filter(h => cat.deeds.map(d => d.label).includes(h.title)), cat.deeds);
-                      if (kg === 0) return null;
-                      return (
-                        <View key={cat.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                          <Text style={{ fontSize: 18, width: 26 }}>{cat.deeds[0]?.emoji}</Text>
-                          <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: '#374151' }}>{cat.name}</Text>
-                          <Text style={{ fontSize: 13, fontWeight: '800', color: '#059669' }}>{kg.toFixed(1)} kg ✓</Text>
-                        </View>
-                      );
-                    })
-                }
-              </View>
-            );
-          })()}
 
           {/* ── Add Reminder ── */}
           <View style={[styles.card, { backgroundColor: '#dcfce7' }]}>
