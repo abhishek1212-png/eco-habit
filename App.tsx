@@ -30,6 +30,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
@@ -388,6 +389,11 @@ export default function App() {
   // ── Auth state ────────────────────────────────────────────────────────────────
   const [loggedIn, setLoggedIn] = useState(false);
   const [login, setLogin] = useState<{ username: string; password: string }>({ username: '', password: '' });
+  const [signupEmail, setSignupEmail] = useState('');
+  const [isSignup, setIsSignup] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -755,34 +761,52 @@ export default function App() {
   };
 
   const handleLogin = async () => {
-    const uname = login.username.trim().toLowerCase();
+    const uname    = login.username.trim().toLowerCase();
     const password = login.password;
     if (!uname || !password) { alert('Enter username and password'); return; }
     if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore only'); return; }
-    const email = `${uname}@eco-habit.app`;
-    try {
-      let userCredential;
+
+    if (isSignup) {
+      const email = signupEmail.trim().toLowerCase();
+      if (!EMAIL_PATTERN.test(email)) { alert('Enter a valid email for password recovery'); return; }
       try {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-      } catch (err: any) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-          userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        } else {
-          alert('Wrong password for that username.');
-          return;
-        }
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid  = cred.user.uid;
+        await setDoc(doc(db, 'eco_usernames', uname), { uid, email });
+        await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
+        await AsyncStorage.setItem('eco_username', uname);
+        setUsername(uname); setLogin({ username: uname, password: '' });
+        setLoggedIn(true); setFirebaseUser(cred.user);
+        await loadRemoteUserData(uid);
+      } catch (e: any) {
+        if (e.code === 'auth/email-already-in-use') alert('That email is already used.');
+        else alert('Could not create account. Try a different username or email.');
       }
-      const user = userCredential.user;
-      await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
-      await AsyncStorage.setItem('eco_username', uname);
-      setUsername(uname);
-      setLogin({ username: uname, password: '' });
-      setLoggedIn(true);
-      setFirebaseUser(user);
-      await loadRemoteUserData(user.uid);
-    } catch (err) {
-      alert('Unable to sign in. Check your network.');
+    } else {
+      try {
+        const snap = await getDoc(doc(db, 'eco_usernames', uname));
+        if (!snap.exists()) { alert('Username not found. Check spelling or sign up.'); return; }
+        const email = (snap.data() as any).email as string;
+        const cred  = await signInWithEmailAndPassword(auth, email, password);
+        await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
+        await AsyncStorage.setItem('eco_username', uname);
+        setUsername(uname); setLogin({ username: uname, password: '' });
+        setLoggedIn(true); setFirebaseUser(cred.user);
+        await loadRemoteUserData(cred.user.uid);
+      } catch (e: any) {
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password.');
+        else alert('Unable to sign in. Check your network.');
+      }
     }
+  };
+
+  const handleForgotPassword = async () => {
+    const email = forgotEmail.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you signed up with'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setForgotSent(true);
+    } catch { alert('Could not send reset email. Check the email address.'); }
   };
 
   const fetchLeaderboard = async () => {
@@ -829,29 +853,81 @@ export default function App() {
             <Text style={styles.loginNotice}>Small habits. Big impact. 🌍</Text>
 
             <View style={styles.loginCard}>
-              <Text style={styles.loginCardTitle}>Welcome back 👋</Text>
-              <TextInput
-                style={styles.loginInput}
-                placeholder="Username (e.g. sidpid)"
-                placeholderTextColor="rgba(110,231,183,0.6)"
-                value={login.username}
-                onChangeText={(v) => setLogin((p) => ({ ...p, username: v }))}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="username"
-              />
-              <TextInput
-                style={styles.loginInput}
-                placeholder="Password"
-                placeholderTextColor="rgba(110,231,183,0.6)"
-                value={login.password}
-                onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
-                secureTextEntry
-                textContentType="password"
-              />
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
-                <Text style={styles.loginButtonText}>Login / Sign up</Text>
-              </TouchableOpacity>
+              {forgotMode ? (
+                <>
+                  <Text style={styles.loginCardTitle}>Reset Password 🔑</Text>
+                  <Text style={{ color: '#86efac', fontSize: 13, textAlign: 'center', marginBottom: 16 }}>Enter the email you signed up with and we'll send a reset link.</Text>
+                  <TextInput
+                    style={styles.loginInput}
+                    placeholder="Your email address"
+                    placeholderTextColor="rgba(110,231,183,0.6)"
+                    value={forgotEmail}
+                    onChangeText={setForgotEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                  {forgotSent
+                    ? <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 15, marginBottom: 12 }}>✅ Reset link sent! Check your email.</Text>
+                    : <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
+                        <Text style={styles.loginButtonText}>Send Reset Link</Text>
+                      </TouchableOpacity>
+                  }
+                  <TouchableOpacity onPress={() => { setForgotMode(false); setForgotSent(false); }} style={{ alignSelf: 'center', marginTop: 14, padding: 8 }}>
+                    <Text style={{ color: '#86efac', fontWeight: '600', fontSize: 14 }}>← Back to Login</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {/* Login / Sign up toggle */}
+                  <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, marginBottom: 16, padding: 4 }}>
+                    {(['Login', 'Sign up'] as const).map(tab => (
+                      <TouchableOpacity key={tab} style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10, backgroundColor: (tab === 'Login') === !isSignup ? '#22c55e' : 'transparent' }}
+                        onPress={() => setIsSignup(tab === 'Sign up')}>
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{tab}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <TextInput
+                    style={styles.loginInput}
+                    placeholder="Username"
+                    placeholderTextColor="rgba(110,231,183,0.6)"
+                    value={login.username}
+                    onChangeText={(v) => setLogin((p) => ({ ...p, username: v }))}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    textContentType="username"
+                  />
+                  {isSignup && (
+                    <TextInput
+                      style={styles.loginInput}
+                      placeholder="Email (for password recovery)"
+                      placeholderTextColor="rgba(110,231,183,0.6)"
+                      value={signupEmail}
+                      onChangeText={setSignupEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                  )}
+                  <TextInput
+                    style={styles.loginInput}
+                    placeholder="Password"
+                    placeholderTextColor="rgba(110,231,183,0.6)"
+                    value={login.password}
+                    onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
+                    secureTextEntry
+                    textContentType="password"
+                  />
+                  <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
+                    <Text style={styles.loginButtonText}>{isSignup ? 'Create Account' : 'Login'}</Text>
+                  </TouchableOpacity>
+                  {!isSignup && (
+                    <TouchableOpacity onPress={() => setForgotMode(true)} style={{ alignSelf: 'center', marginTop: 14, padding: 8 }}>
+                      <Text style={{ color: '#86efac', fontWeight: '600', fontSize: 14 }}>Forgot Password?</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
             </View>
           </ScrollView>
         </LinearGradient>
