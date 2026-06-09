@@ -205,15 +205,13 @@ export default function App() {
   const [login, setLogin] = useState<LoginState>({ username: '', password: '' });
   const [signupEmail, setSignupEmail] = useState('');
   const [isSignup, setIsSignup] = useState(false);
-  const [forgotMode, setForgotMode] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
   const [lbLoading, setLbLoading] = useState(false);
+  const lbLastFetch = useRef<number>(0);
 
   const [globalStreak, setGlobalStreak] = useState(0);
   const [lastActivityDate, setLastActivityDate] = useState<string | null>(null);
@@ -366,7 +364,9 @@ export default function App() {
     try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds, username }, { merge:true }); } catch {}
   };
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (force = false) => {
+    const now = Date.now();
+    if (!force && leaderboard.length > 0 && now - lbLastFetch.current < 60_000) return; // use cache
     setLbLoading(true);
     try {
       const snap = await getDocs(collection(db,'eco_users'));
@@ -376,12 +376,13 @@ export default function App() {
           const totalXp = data.xp || 0;
           let lvl=1, acc=0;
           while (true) { const n=100+(lvl-1)*20; if (totalXp<acc+n) break; acc+=n; lvl++; }
-          return { username: data.username || 'Eco Warrior', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+          return { username: data.username || '—', xp: totalXp, streak: data.globalStreak||0, level: lvl };
         })
         .sort((a,b)=>b.xp-a.xp)
         .slice(0,50)
         .map((u,i)=>({...u, rank:i+1}));
       setLeaderboard(users);
+      lbLastFetch.current = Date.now();
     } catch {}
     setLbLoading(false);
   };
@@ -491,21 +492,13 @@ export default function App() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const email = forgotEmail.trim().toLowerCase();
-    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you signed up with'); return; }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setForgotSent(true);
-    } catch { alert('Could not send reset email. Make sure you entered the right email.'); }
-  };
 
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(()=>{});
     AsyncStorage.removeItem('eco_username').catch(()=>{});
     setLogin({ username: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
-    setIsSignup(false); setForgotMode(false); setForgotSent(false); setActiveTab('home');
+    setIsSignup(false); setActiveTab('home');
   };
 
   // ── Login Screen ──────────────────────────────────────────────────────────
@@ -531,29 +524,7 @@ export default function App() {
               <Text style={{color:'#86efac',textAlign:'center',fontSize:13,marginBottom:20}}>
                 One small step for you, one giant leap for Earth! 🌍
               </Text>
-              {forgotMode ? (
-                // ── Forgot Password screen ──
-                <>
-                  <Text style={{color:'#86efac',fontSize:13,textAlign:'center',marginBottom:16}}>Enter the email you signed up with and we'll send a reset link.</Text>
-                  <TextInput
-                    style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:12,fontSize:15}}
-                    placeholder="Your email address" placeholderTextColor="#6b9e80"
-                    value={forgotEmail} onChangeText={setForgotEmail}
-                    autoCapitalize="none" keyboardType="email-address"
-                  />
-                  {forgotSent
-                    ? <Text style={{color:'#4ade80',textAlign:'center',fontWeight:'700',fontSize:15,marginBottom:12}}>✅ Reset link sent! Check your email.</Text>
-                    : <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:15,alignItems:'center',marginBottom:12}} onPress={handleForgotPassword}>
-                        <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>Send Reset Link</Text>
-                      </TouchableOpacity>
-                  }
-                  <TouchableOpacity onPress={()=>{setForgotMode(false);setForgotSent(false);}} style={{alignSelf:'center',padding:8}}>
-                    <Text style={{color:'#86efac',fontWeight:'600',fontSize:14}}>← Back to Login</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                // ── Login / Sign up screen ──
-                <>
+              <>
                   <View style={{flexDirection:'row',backgroundColor:'rgba(255,255,255,0.08)',borderRadius:12,marginBottom:16,padding:4}}>
                     {(['Login','Sign up'] as const).map(tab=>(
                       <TouchableOpacity key={tab} style={{flex:1,paddingVertical:10,alignItems:'center',borderRadius:10,backgroundColor:(tab==='Login')===!isSignup?'#22c55e':'transparent'}}
@@ -594,13 +565,7 @@ export default function App() {
                   <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:15,alignItems:'center',marginBottom:12}} onPress={handleLogin}>
                     <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>{isSignup?'Create Account':'Login'}</Text>
                   </TouchableOpacity>
-                  {!isSignup && (
-                    <TouchableOpacity onPress={()=>setForgotMode(true)} style={{alignSelf:'center',padding:8}}>
-                      <Text style={{color:'#86efac',fontWeight:'600',fontSize:14}}>Forgot Password?</Text>
-                    </TouchableOpacity>
-                  )}
-                </>
-              )}
+              </>
             </Animated.View>
           </View>
         </LinearGradient>
@@ -634,7 +599,13 @@ export default function App() {
       {activeTab==='leaderboard'&&(
         <ScrollView style={{flex:1,marginBottom:60}}>
           <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{paddingTop:18,paddingBottom:26,paddingHorizontal:20,marginBottom:4}} start={[0,0]} end={[1,1]}>
-            <Text style={{fontSize:22,fontWeight:'900',color:'#fff',textAlign:'center'}}>🏆 Leaderboard</Text>
+            <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
+              <View style={{width:70}}/>
+              <Text style={{fontSize:22,fontWeight:'900',color:'#fff'}}>🏆 Leaderboard</Text>
+              <TouchableOpacity onPress={()=>fetchLeaderboard(true)} style={{backgroundColor:'#1e5c3e',borderRadius:20,paddingHorizontal:12,paddingVertical:6}}>
+                <Text style={{color:'#4ade80',fontWeight:'700',fontSize:12}}>↻ Refresh</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={{color:'#6ee7b7',fontSize:12,textAlign:'center',marginTop:4}}>Top Eco Warriors worldwide</Text>
           </LinearGradient>
           <View style={{padding:16,marginBottom:60}}>

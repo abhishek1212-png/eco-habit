@@ -30,7 +30,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
@@ -391,9 +390,6 @@ export default function App() {
   const [login, setLogin] = useState<{ username: string; password: string }>({ username: '', password: '' });
   const [signupEmail, setSignupEmail] = useState('');
   const [isSignup, setIsSignup] = useState(false);
-  const [forgotMode, setForgotMode] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
@@ -408,6 +404,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
   const [lbLoading, setLbLoading] = useState(false);
+  const lbLastFetch = useRef<number>(0);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -801,16 +798,10 @@ export default function App() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const email = forgotEmail.trim().toLowerCase();
-    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you signed up with'); return; }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setForgotSent(true);
-    } catch { alert('Could not send reset email. Check the email address.'); }
-  };
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (force = false) => {
+    const now = Date.now();
+    if (!force && leaderboard.length > 0 && now - lbLastFetch.current < 60_000) return;
     setLbLoading(true);
     try {
       const snap = await getDocs(collection(db, 'eco_users'));
@@ -820,12 +811,13 @@ export default function App() {
           const totalXp = data.xp || 0;
           let lvl = 1, acc = 0;
           while (true) { const n = 100+(lvl-1)*20; if (totalXp<acc+n) break; acc+=n; lvl++; }
-          return { username: data.username || 'Eco Warrior', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+          return { username: data.username || '—', xp: totalXp, streak: data.globalStreak||0, level: lvl };
         })
         .sort((a,b) => b.xp - a.xp)
         .slice(0, 50)
         .map((u, i) => ({ ...u, rank: i+1 }));
       setLeaderboard(users);
+      lbLastFetch.current = Date.now();
     } catch {}
     setLbLoading(false);
   };
@@ -854,31 +846,7 @@ export default function App() {
             <Text style={styles.loginNotice}>Small habits. Big impact. 🌍</Text>
 
             <View style={styles.loginCard}>
-              {forgotMode ? (
-                <>
-                  <Text style={styles.loginCardTitle}>Reset Password 🔑</Text>
-                  <Text style={{ color: '#86efac', fontSize: 13, textAlign: 'center', marginBottom: 16 }}>Enter the email you signed up with and we'll send a reset link.</Text>
-                  <TextInput
-                    style={styles.loginInput}
-                    placeholder="Your email address"
-                    placeholderTextColor="rgba(110,231,183,0.6)"
-                    value={forgotEmail}
-                    onChangeText={setForgotEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                  {forgotSent
-                    ? <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 15, marginBottom: 12 }}>✅ Reset link sent! Check your email.</Text>
-                    : <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
-                        <Text style={styles.loginButtonText}>Send Reset Link</Text>
-                      </TouchableOpacity>
-                  }
-                  <TouchableOpacity onPress={() => { setForgotMode(false); setForgotSent(false); }} style={{ alignSelf: 'center', marginTop: 14, padding: 8 }}>
-                    <Text style={{ color: '#86efac', fontWeight: '600', fontSize: 14 }}>← Back to Login</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
+              <>
                   {/* Login / Sign up toggle */}
                   <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, marginBottom: 16, padding: 4 }}>
                     {(['Login', 'Sign up'] as const).map(tab => (
@@ -930,13 +898,7 @@ export default function App() {
                   <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
                     <Text style={styles.loginButtonText}>{isSignup ? 'Create Account' : 'Login'}</Text>
                   </TouchableOpacity>
-                  {!isSignup && (
-                    <TouchableOpacity onPress={() => setForgotMode(true)} style={{ alignSelf: 'center', marginTop: 14, padding: 8 }}>
-                      <Text style={{ color: '#86efac', fontWeight: '600', fontSize: 14 }}>Forgot Password?</Text>
-                    </TouchableOpacity>
-                  )}
                 </>
-              )}
             </View>
           </ScrollView>
         </LinearGradient>
@@ -959,7 +921,9 @@ export default function App() {
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>← Back</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff' }}>🏆 Leaderboard</Text>
-              <View style={{ width: 70 }} />
+              <TouchableOpacity onPress={() => fetchLeaderboard(true)} style={{ backgroundColor: '#1e5c3e', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+                <Text style={{ color: '#4ade80', fontWeight: '700', fontSize: 12 }}>↻ Refresh</Text>
+              </TouchableOpacity>
             </View>
             <Text style={{ color: '#6ee7b7', fontSize: 12, textAlign: 'center', marginTop: 6 }}>Top Eco Warriors worldwide</Text>
           </LinearGradient>
