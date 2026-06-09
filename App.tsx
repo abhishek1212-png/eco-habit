@@ -394,6 +394,7 @@ export default function App() {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -888,6 +889,9 @@ export default function App() {
                     ))}
                   </View>
 
+                  <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '600', marginBottom: 8, textAlign: 'center' }}>
+                    {isSignup ? 'Make a username and password 🌿' : 'Enter your username and password'}
+                  </Text>
                   <TextInput
                     style={styles.loginInput}
                     placeholder="Username"
@@ -909,15 +913,20 @@ export default function App() {
                       keyboardType="email-address"
                     />
                   )}
-                  <TextInput
-                    style={styles.loginInput}
-                    placeholder="Password"
-                    placeholderTextColor="rgba(110,231,183,0.6)"
-                    value={login.password}
-                    onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
-                    secureTextEntry
-                    textContentType="password"
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(110,231,183,0.3)', borderRadius: 14, marginBottom: 12 }}>
+                    <TextInput
+                      style={[styles.loginInput, { flex: 1, marginBottom: 0, borderWidth: 0, backgroundColor: 'transparent' }]}
+                      placeholder="Password"
+                      placeholderTextColor="rgba(110,231,183,0.6)"
+                      value={login.password}
+                      onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
+                      secureTextEntry={!showPassword}
+                      textContentType="password"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={{ paddingHorizontal: 14 }}>
+                      <Text style={{ fontSize: 18 }}>{showPassword ? '🙈' : '👁️'}</Text>
+                    </TouchableOpacity>
+                  </View>
                   <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
                     <Text style={styles.loginButtonText}>{isSignup ? 'Create Account' : 'Login'}</Text>
                   </TouchableOpacity>
