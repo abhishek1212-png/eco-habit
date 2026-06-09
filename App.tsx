@@ -846,59 +846,65 @@ export default function App() {
             <Text style={styles.loginNotice}>Small habits. Big impact. 🌍</Text>
 
             <View style={styles.loginCard}>
-              <>
-                  {/* Login / Sign up toggle */}
-                  <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, marginBottom: 16, padding: 4 }}>
-                    {(['Login', 'Sign up'] as const).map(tab => (
-                      <TouchableOpacity key={tab} style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10, backgroundColor: (tab === 'Login') === !isSignup ? '#22c55e' : 'transparent' }}
-                        onPress={() => setIsSignup(tab === 'Sign up')}>
-                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{tab}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+              <Text style={[styles.loginCardTitle, { fontSize: 20 }]}>Hey there! 👋</Text>
+              <Text style={{ color: '#86efac', textAlign: 'center', fontSize: 13, marginBottom: 20 }}>
+                New or returning — just fill in your details
+              </Text>
 
-                  <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '600', marginBottom: 8, textAlign: 'center' }}>
-                    {isSignup ? 'Make a username and password 🌿' : 'Enter your username and password'}
-                  </Text>
+              <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Your username</Text>
+              <TextInput
+                style={styles.loginInput}
+                placeholder="e.g. greenplant42"
+                placeholderTextColor="rgba(110,231,183,0.6)"
+                value={login.username}
+                onChangeText={(v) => setLogin((p) => ({ ...p, username: v }))}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="username"
+              />
+
+              <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Your password</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(110,231,183,0.3)', borderRadius: 14, marginBottom: 16 }}>
+                <TextInput
+                  style={[styles.loginInput, { flex: 1, marginBottom: 0, borderWidth: 0, backgroundColor: 'transparent' }]}
+                  placeholder="At least 6 characters"
+                  placeholderTextColor="rgba(110,231,183,0.6)"
+                  value={login.password}
+                  onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
+                  secureTextEntry={!showPassword}
+                  textContentType="password"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={{ paddingHorizontal: 14 }}>
+                  <Text style={{ fontSize: 18 }}>{showPassword ? '🙈' : '👁️'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity onPress={() => setIsSignup(p => !p)} style={{ marginBottom: 8 }}>
+                <Text style={{ color: '#86efac', fontSize: 13, textAlign: 'center' }}>
+                  {isSignup ? '▾ Hide email field' : '▸ New here? Add your email too'}
+                </Text>
+              </TouchableOpacity>
+              {isSignup && (
+                <>
+                  <Text style={{ color: '#86efac', fontSize: 12, marginBottom: 6, opacity: 0.8 }}>📧 Only needed if you forget your password</Text>
                   <TextInput
                     style={styles.loginInput}
-                    placeholder="Username"
+                    placeholder="your@email.com"
                     placeholderTextColor="rgba(110,231,183,0.6)"
-                    value={login.username}
-                    onChangeText={(v) => setLogin((p) => ({ ...p, username: v }))}
+                    value={signupEmail}
+                    onChangeText={setSignupEmail}
                     autoCapitalize="none"
-                    autoCorrect={false}
-                    textContentType="username"
+                    keyboardType="email-address"
                   />
-                  {isSignup && (
-                    <TextInput
-                      style={styles.loginInput}
-                      placeholder="Email (for password recovery)"
-                      placeholderTextColor="rgba(110,231,183,0.6)"
-                      value={signupEmail}
-                      onChangeText={setSignupEmail}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                    />
-                  )}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(110,231,183,0.3)', borderRadius: 14, marginBottom: 12 }}>
-                    <TextInput
-                      style={[styles.loginInput, { flex: 1, marginBottom: 0, borderWidth: 0, backgroundColor: 'transparent' }]}
-                      placeholder="Password"
-                      placeholderTextColor="rgba(110,231,183,0.6)"
-                      value={login.password}
-                      onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}
-                      secureTextEntry={!showPassword}
-                      textContentType="password"
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={{ paddingHorizontal: 14 }}>
-                      <Text style={{ fontSize: 18 }}>{showPassword ? '🙈' : '👁️'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
-                    <Text style={styles.loginButtonText}>{isSignup ? 'Create Account' : 'Login'}</Text>
-                  </TouchableOpacity>
                 </>
+              )}
+
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
+                <Text style={styles.loginButtonText}>Let's Go! 🌿</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'rgba(110,231,183,0.5)', fontSize: 12, textAlign: 'center', marginTop: 12 }}>
+                Already have an account? Just type your username &amp; password above 👆
+              </Text>
             </View>
           </ScrollView>
         </LinearGradient>

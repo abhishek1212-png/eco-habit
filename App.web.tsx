@@ -518,54 +518,63 @@ export default function App() {
 
             {/* Form */}
             <Animated.View style={{width:'100%',maxWidth:420,opacity:loginFade,transform:[{translateY:loginFade.interpolate({inputRange:[0,1],outputRange:[40,0]})}]}}>
-              <Text style={{fontSize:22,fontWeight:'900',color:'#ffffff',textAlign:'center',marginBottom:4}}>
-                Welcome to <Text style={{color:'#4ade80'}}>Eco Habit</Text>
+              <Text style={{fontSize:24,fontWeight:'900',color:'#ffffff',textAlign:'center',marginBottom:4}}>
+                Hey there! 👋
               </Text>
-              <Text style={{color:'#86efac',textAlign:'center',fontSize:13,marginBottom:20}}>
-                One small step for you, one giant leap for Earth! 🌍
+              <Text style={{color:'#86efac',textAlign:'center',fontSize:14,marginBottom:24}}>
+                New or returning — just fill in your details below
               </Text>
-              <>
-                  <View style={{flexDirection:'row',backgroundColor:'rgba(255,255,255,0.08)',borderRadius:12,marginBottom:16,padding:4}}>
-                    {(['Login','Sign up'] as const).map(tab=>(
-                      <TouchableOpacity key={tab} style={{flex:1,paddingVertical:10,alignItems:'center',borderRadius:10,backgroundColor:(tab==='Login')===!isSignup?'#22c55e':'transparent'}}
-                        onPress={()=>setIsSignup(tab==='Sign up')}>
-                        <Text style={{color:'#fff',fontWeight:'800',fontSize:14}}>{tab}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
 
-                  <Text style={{color:'#86efac',fontSize:13,fontWeight:'600',marginBottom:8,textAlign:'center'}}>
-                    {isSignup ? 'Make a username and password 🌿' : 'Enter your username and password'}
-                  </Text>
+              {/* Username */}
+              <Text style={{color:'#86efac',fontSize:13,fontWeight:'700',marginBottom:6}}>Your username</Text>
+              <TextInput
+                style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:16,fontSize:15}}
+                placeholder="e.g. greenplant42"
+                placeholderTextColor="#6b9e80"
+                value={login.username} onChangeText={v=>setLogin(p=>({...p,username:v}))}
+                autoCapitalize="none" autoCorrect={false}
+              />
+
+              {/* Password */}
+              <Text style={{color:'#86efac',fontSize:13,fontWeight:'700',marginBottom:6}}>Your password</Text>
+              <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,marginBottom:16}}>
+                <TextInput
+                  style={{flex:1,padding:14,color:'#ffffff',fontSize:15}}
+                  placeholder="At least 6 characters"
+                  placeholderTextColor="#6b9e80"
+                  value={login.password} onChangeText={v=>setLogin(p=>({...p,password:v}))}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={()=>setShowPassword(p=>!p)} style={{paddingHorizontal:14}}>
+                  <Text style={{fontSize:18}}>{showPassword?'🙈':'👁️'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Email (new accounts only) */}
+              <TouchableOpacity onPress={()=>setIsSignup(p=>!p)} style={{marginBottom:8}}>
+                <Text style={{color:'#86efac',fontSize:13,textAlign:'center'}}>
+                  {isSignup ? '▾ Hide email field' : '▸ New here? Add your email too'}
+                </Text>
+              </TouchableOpacity>
+              {isSignup&&(
+                <>
+                  <Text style={{color:'#86efac',fontSize:12,marginBottom:6,opacity:0.8}}>📧 Your email — only used if you forget your password</Text>
                   <TextInput
-                    style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:12,fontSize:15}}
-                    placeholder="Username" placeholderTextColor="#6b9e80"
-                    value={login.username} onChangeText={v=>setLogin(p=>({...p,username:v}))}
-                    autoCapitalize="none" autoCorrect={false}
+                    style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:16,fontSize:15}}
+                    placeholder="your@email.com"
+                    placeholderTextColor="#6b9e80"
+                    value={signupEmail} onChangeText={setSignupEmail}
+                    autoCapitalize="none" keyboardType="email-address"
                   />
-                  {isSignup && (
-                    <TextInput
-                      style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:12,fontSize:15}}
-                      placeholder="Email (for password recovery)" placeholderTextColor="#6b9e80"
-                      value={signupEmail} onChangeText={setSignupEmail}
-                      autoCapitalize="none" keyboardType="email-address"
-                    />
-                  )}
-                  <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,marginBottom:12}}>
-                    <TextInput
-                      style={{flex:1,padding:14,color:'#ffffff',fontSize:15}}
-                      placeholder="Password" placeholderTextColor="#6b9e80"
-                      value={login.password} onChangeText={v=>setLogin(p=>({...p,password:v}))}
-                      secureTextEntry={!showPassword}
-                    />
-                    <TouchableOpacity onPress={()=>setShowPassword(p=>!p)} style={{paddingHorizontal:14}}>
-                      <Text style={{fontSize:18}}>{showPassword?'🙈':'👁️'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:15,alignItems:'center',marginBottom:12}} onPress={handleLogin}>
-                    <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>{isSignup?'Create Account':'Login'}</Text>
-                  </TouchableOpacity>
-              </>
+                </>
+              )}
+
+              <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:16,alignItems:'center',marginTop:4}} onPress={handleLogin}>
+                <Text style={{color:'#fff',fontWeight:'900',fontSize:17}}>Let's Go! 🌿</Text>
+              </TouchableOpacity>
+              <Text style={{color:'#6b9e80',fontSize:12,textAlign:'center',marginTop:12}}>
+                Already have an account? Just type your username &amp; password above 👆
+              </Text>
             </Animated.View>
           </View>
         </LinearGradient>
