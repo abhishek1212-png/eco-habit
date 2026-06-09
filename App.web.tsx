@@ -551,9 +551,14 @@ export default function App() {
         <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{paddingTop:18,paddingBottom:26,paddingHorizontal:isWide?40:20,borderBottomLeftRadius:28,borderBottomRightRadius:28,marginBottom:4}} start={[0,0]} end={[1,1]}>
           <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
             <Text style={{fontSize:18,fontWeight:'900',color:'#fff'}}>🌿 Eco Habit</Text>
-            <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
-              <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>Sign out</Text>
-            </TouchableOpacity>
+            <View style={{flexDirection:'row',gap:8}}>
+              <TouchableOpacity onPress={()=>{setActiveTab('leaderboard');fetchLeaderboard();}} style={{backgroundColor:'#6366f1',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
+                <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>🏆 Leaderboard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
+                <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>Sign out</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={{color:'#6ee7b7',fontSize:12,marginBottom:14}}>
             {username||'Eco Warrior'} · {globalStreak>0?`🌱 ${globalStreak}-day streak!`:'🌱 Start your journey!'}

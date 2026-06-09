@@ -847,15 +847,55 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-      <ScrollView style={{ flex: 1 }}>
+
+      {/* Leaderboard screen */}
+      {activeTab === 'leaderboard' && (
+        <View style={{ flex: 1 }}>
+          <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{ paddingTop: 18, paddingBottom: 20, paddingHorizontal: 20 }} start={[0,0]} end={[1,1]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <TouchableOpacity onPress={() => setActiveTab('home')} style={{ backgroundColor: '#1e5c3e', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>← Back</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff' }}>🏆 Leaderboard</Text>
+              <View style={{ width: 70 }} />
+            </View>
+            <Text style={{ color: '#6ee7b7', fontSize: 12, textAlign: 'center', marginTop: 6 }}>Top Eco Warriors worldwide</Text>
+          </LinearGradient>
+          <ScrollView style={{ flex: 1, backgroundColor: '#f9fafb' }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+            {lbLoading && <Text style={{ color: '#9ca3af', textAlign: 'center', marginTop: 40, fontSize: 15 }}>Loading...</Text>}
+            {!lbLoading && leaderboard.length === 0 && <Text style={{ color: '#9ca3af', textAlign: 'center', marginTop: 40, fontSize: 15 }}>No data yet. Be the first! 🌱</Text>}
+            {leaderboard.map((u, i) => {
+              const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+              const isMe  = u.username === username;
+              return (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isMe ? '#dcfce7' : '#fff', borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: isMe ? 2 : 1, borderColor: isMe ? '#22c55e' : '#e5e7eb' }}>
+                  <Text style={{ fontSize: 20, width: 40, textAlign: 'center', fontWeight: '900' }}>{medal}</Text>
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={{ fontWeight: '800', fontSize: 15, color: '#111827' }}>{u.username}{isMe ? ' (you)' : ''}</Text>
+                    <Text style={{ color: '#6b7280', fontSize: 12, marginTop: 2 }}>Level {u.level} · 🔥 {u.streak} day streak</Text>
+                  </View>
+                  <Text style={{ fontWeight: '900', fontSize: 16, color: '#059669' }}>{u.xp} XP</Text>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {activeTab === 'home' && <ScrollView style={{ flex: 1 }}>
 
         {/* ── Hero Header ── */}
         <LinearGradient colors={['#011a12', '#022c22', '#064e3b']} style={styles.hero} start={[0, 0]} end={[1, 1]}>
           <View style={styles.heroTop}>
             <Text style={styles.heroLogo}>🌿 Eco Habit</Text>
-            <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
-              <Text style={styles.heroSignOutTxt}>Sign out</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity onPress={() => { setActiveTab('leaderboard'); fetchLeaderboard(); }} style={{ backgroundColor: '#6366f1', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+                <Text style={styles.heroSignOutTxt}>🏆 Leaderboard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
+                <Text style={styles.heroSignOutTxt}>Sign out</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={styles.heroTagline}>
             {username || 'Eco Warrior'} · {globalStreak > 0 ? `🌱 ${globalStreak}-day streak!` : '🌱 Start your journey!'}
@@ -1141,7 +1181,7 @@ export default function App() {
           </View>
 
         </LinearGradient>{/* end content */}
-      </ScrollView>
+      </ScrollView>}
 
       {Platform.OS !== 'web' && (
           <ConfettiCannon
