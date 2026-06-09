@@ -50,6 +50,38 @@ type Credentials = { email: string; password?: string };
 const XP_PER = 10;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// ─── Carbon footprint savings per deed (grams CO₂ saved, based on EPA/IPCC data) ──
+const CO2_SAVINGS_G: Record<string, number> = {
+  'public-transport': 2600,
+  'walk':             2600,
+  'stairs':           50,
+  'zoom':             5000,
+  'reuse':            33,
+  'reusable-cup':     80,
+  'recycled-plastic': 200,
+  'bottle':           80,
+  'plants':           10,
+  'recycle':          300,
+  'segregate':        150,
+  'switch-off':       200,
+  'lower-hvac':       500,
+  'solar':            1500,
+  'full-appliances':  300,
+  'repair':           500,
+  'plant-diet':       1500,
+  'eco-shopping':     200,
+  'compost':          300,
+  'sustainable':      500,
+};
+
+function calcCarbonKg(completedHabits: { title: string }[], allDeeds: { id: string; label: string }[]): number {
+  return completedHabits.reduce((sum, h) => {
+    const deed = allDeeds.find(d => d.label === h.title);
+    if (!deed) return sum;
+    return sum + (CO2_SAVINGS_G[deed.id] ?? 300);
+  }, 0) / 1000;
+}
+
 // ─── Category colours ─────────────────────────────────────────────────────────
 const CAT_COLORS: Record<string, { bg: string; activeBg: string; border: string; pill: string; text: string }> = {
   transport:     { bg: '#e0f2fe', activeBg: '#bae6fd', border: '#38bdf8', pill: '#0369a1', text: '#0369a1' },
@@ -587,6 +619,61 @@ export default function App() {
 
         <View style={{padding:isWide?28:14,paddingBottom:48,alignItems:'center'}}>
         <View style={{width:'100%',maxWidth:isWide?900:undefined}}>
+
+          {/* ── Carbon Impact Panel ── */}
+          {(()=>{
+            const allDeeds = DEFAULT_DEED_CATEGORIES.flatMap(c=>c.deeds);
+            const completed = habits.filter(h=>h.completed);
+            const totalKg   = calcCarbonKg(completed, allDeeds);
+            const trees     = (totalKg / 21).toFixed(1);
+            const carKm     = Math.round(totalKg / 0.21);
+            const badge     = totalKg===0?'Keep going! 💪':totalKg<2?'Nice start! 🌱':totalKg<10?'Eco Hero! 🌿':totalKg<30?'Super Green! 🌳':'Earth Champion! 🌍';
+            return (
+              <View style={[ws.card,{backgroundColor:'#ecfdf5',marginBottom:16,borderWidth:2,borderColor:'#6ee7b7'}]}>
+                <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                  <Text style={[ws.section,{color:'#064e3b',fontSize:16}]}>🌍 Your Planet Impact</Text>
+                  <View style={{backgroundColor:'#059669',borderRadius:20,paddingHorizontal:12,paddingVertical:4}}>
+                    <Text style={{color:'#fff',fontWeight:'800',fontSize:12}}>{badge}</Text>
+                  </View>
+                </View>
+                <Text style={{color:'#047857',fontSize:13,marginBottom:14}}>Every habit you complete helps the planet! 🌱</Text>
+
+                {/* Fun stats */}
+                <View style={{flexDirection:'row',flexWrap:'wrap',gap:10,marginBottom:14}}>
+                  {[
+                    {icon:'🌿', label:'Good deeds done', value: String(completed.length), color:'#dcfce7'},
+                    {icon:'🌳', label:'Trees worth of clean air', value: trees, color:'#d1fae5'},
+                    {icon:'🚗', label:'Car trip km saved', value: String(carKm), color:'#e0f2fe'},
+                    {icon:'🌍', label:'CO₂ saved (kg)', value: totalKg.toFixed(1), color:'#f3e8ff'},
+                  ].map(s=>(
+                    <View key={s.label} style={{flex:1,minWidth:130,backgroundColor:s.color,borderRadius:14,padding:14,alignItems:'center'}}>
+                      <Text style={{fontSize:30}}>{s.icon}</Text>
+                      <Text style={{fontSize:22,fontWeight:'900',color:'#064e3b',marginTop:4}}>{s.value}</Text>
+                      <Text style={{fontSize:11,color:'#374151',textAlign:'center',marginTop:2,fontWeight:'600'}}>{s.label}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {totalKg===0
+                  ? <Text style={{color:'#9ca3af',textAlign:'center',fontStyle:'italic',fontSize:13}}>Complete your first habit to see your impact! 🌟</Text>
+                  : <View style={{backgroundColor:'#fff',borderRadius:12,padding:12,borderWidth:1,borderColor:'#a7f3d0'}}>
+                      <Text style={{fontWeight:'800',color:'#064e3b',fontSize:13,marginBottom:8}}>What you've helped with 👇</Text>
+                      {DEFAULT_DEED_CATEGORIES.map(cat=>{
+                        const kg = calcCarbonKg(completed.filter(h=>cat.deeds.map(d=>d.label).includes(h.title)), cat.deeds);
+                        if (kg===0) return null;
+                        return (
+                          <View key={cat.id} style={{flexDirection:'row',alignItems:'center',marginBottom:6}}>
+                            <Text style={{fontSize:18,width:28}}>{cat.deeds[0]?.emoji}</Text>
+                            <Text style={{flex:1,fontSize:13,fontWeight:'600',color:'#374151'}}>{cat.name}</Text>
+                            <Text style={{fontSize:13,fontWeight:'800',color:'#059669'}}>{kg.toFixed(1)} kg ✓</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                }
+              </View>
+            );
+          })()}
 
           {/* Two column layout on wide screens */}
           <View style={{flexDirection:isWide?'row':'column',gap:16,alignItems:'flex-start'}}>
