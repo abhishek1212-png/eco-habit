@@ -38,7 +38,7 @@ import {
   type User,
 } from 'firebase/auth';
 // eco_usernames/{username} → { uid, email }  (reverse-lookup for login)
-import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Habit = {
@@ -392,7 +392,7 @@ export default function App() {
     if (!force && leaderboard.length > 0 && now - lbLastFetch.current < 60_000) return; // use cache
     setLbLoading(true);
     try {
-      const snap = await getDocs(collection(db,'eco_users'));
+      const snap = await getDocsFromServer(collection(db,'eco_users'));
       const seen = new Set<string>();
       const users = snap.docs
         .map(d => {
