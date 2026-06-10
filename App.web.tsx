@@ -330,6 +330,11 @@ export default function App() {
     saveRemoteUserData(firebaseUser.uid);
   }, [habits, xp, globalStreak, lastActivityDate, customDeeds, firebaseUser]);
 
+  // Force-refresh leaderboard every time the user opens that tab so streak is always current
+  useEffect(() => {
+    if (activeTab === 'leaderboard') fetchLeaderboard(true);
+  }, [activeTab]);
+
   // Helpers
   const todayStr = () => {
     const d = new Date();
@@ -702,7 +707,7 @@ export default function App() {
           <TouchableOpacity key={tab.id} style={{flex:1,alignItems:'center',paddingVertical:6}}
             onPress={()=>{
               setActiveTab(tab.id);
-              if(tab.id==='leaderboard') fetchLeaderboard();
+              if(tab.id==='leaderboard') fetchLeaderboard(true);
             }}>
             <Text style={{fontSize:13,fontWeight:'700',color:activeTab===tab.id?'#4ade80':'#4d9e7a'}}>{tab.label}</Text>
             {activeTab===tab.id&&<View style={{width:24,height:3,backgroundColor:'#4ade80',borderRadius:2,marginTop:3}}/>}
@@ -754,7 +759,7 @@ export default function App() {
           <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
             <Text style={{fontSize:18,fontWeight:'900',color:'#fff'}}>🌿 Eco Habit</Text>
             <View style={{flexDirection:'row',gap:8}}>
-              <TouchableOpacity onPress={()=>{setActiveTab('leaderboard');fetchLeaderboard();}} style={{backgroundColor:'#6366f1',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
+              <TouchableOpacity onPress={()=>{setActiveTab('leaderboard');fetchLeaderboard(true);}} style={{backgroundColor:'#6366f1',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
                 <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>🏆 Leaderboard</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
