@@ -743,11 +743,16 @@ export default function App() {
 
       // Global daily streak
       if (lastActivityDate !== today) {
-        const newGlobal =
-          lastActivityDate === yest ? globalStreak + 1 : 1;
+        const newGlobal = lastActivityDate === yest ? globalStreak + 1 : 1;
+        const newXp = xp + XP_PER;
         setGlobalStreak(newGlobal);
         setLastActivityDate(today);
         setStreakBroken(false);
+        // Save immediately so leaderboard is always up to date
+        if (firebaseUser) {
+          const userDoc = doc(db, 'eco_users', firebaseUser.uid);
+          setDoc(userDoc, { globalStreak: newGlobal, lastActivityDate: today, xp: newXp, username }, { merge: true }).catch(() => {});
+        }
       }
     } else {
       scheduleForHabit(id, h.title, h.time);

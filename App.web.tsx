@@ -464,8 +464,14 @@ export default function App() {
       const newStreak = h.lastCompletedDate===yest||h.lastCompletedDate===today ? (h.streak||0)+1 : 1;
       setHabits(prev=>prev.map(hh=>hh.id===id?{...hh,completed:true,streak:newStreak,lastCompletedDate:today}:hh));
       if (lastActivityDate!==today) {
-        setGlobalStreak(lastActivityDate===yest?globalStreak+1:1);
+        const newGlobal = lastActivityDate===yest ? globalStreak+1 : 1;
+        const newXp = xp + XP_PER;
+        setGlobalStreak(newGlobal);
         setLastActivityDate(today); setStreakBroken(false);
+        // Save immediately so leaderboard is always up to date
+        if (firebaseUser) {
+          setDoc(doc(db,'eco_users',firebaseUser.uid), { globalStreak: newGlobal, lastActivityDate: today, xp: newXp, username }, { merge: true }).catch(()=>{});
+        }
       }
     } else {
       setXp(v=>Math.max(0,v-XP_PER));
