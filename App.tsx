@@ -33,7 +33,7 @@ import {
   sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 type Habit = {
   id: string;
@@ -392,9 +392,10 @@ export default function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotMode, setForgotMode] = useState<'password'|'username'|null>(null);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [foundUsername, setFoundUsername] = useState<string|null>(null);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -838,6 +839,18 @@ export default function App() {
     }
   };
 
+  const handleForgotUsername = async () => {
+    const email = forgotEmail.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you used to sign up'); return; }
+    try {
+      const snap = await getDocs(query(collection(db, 'eco_usernames'), where('email', '==', email)));
+      if (snap.empty) { alert('No account found with that email.'); return; }
+      setFoundUsername(snap.docs[0].id);
+    } catch { alert('Something went wrong. Try again.'); }
+  };
+
+  const resetRecovery = () => { setForgotMode(null); setForgotEmail(''); setForgotSent(false); setFoundUsername(null); };
+
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
@@ -917,7 +930,9 @@ export default function App() {
 
               {forgotMode ? (
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: 16, marginTop: 4 }}>
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginBottom: 6, textAlign: 'center' }}>🔑 Reset Password</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginBottom: 4, textAlign: 'center' }}>
+                    {forgotMode === 'password' ? '🔑 Reset Password' : '👤 Find Username'}
+                  </Text>
                   <Text style={{ color: '#86efac', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>Enter the email you signed up with</Text>
                   <TextInput
                     style={styles.loginInput}
@@ -926,19 +941,31 @@ export default function App() {
                     value={forgotEmail} onChangeText={setForgotEmail}
                     autoCapitalize="none" keyboardType="email-address"
                   />
-                  {forgotSent
-                    ? <>
-                        <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>✅ Reset link sent!</Text>
-                        <Text style={{ color: '#86efac', textAlign: 'center', fontSize: 12, marginBottom: 8 }}>Can't find it? Check your spam or junk folder 📂</Text>
-                      </>
-                    : <>
-                        <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
-                          <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
+
+                  {forgotMode === 'password' ? (
+                    forgotSent
+                      ? <>
+                          <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>✅ Reset link sent!</Text>
+                          <Text style={{ color: '#86efac', textAlign: 'center', fontSize: 12, marginBottom: 8 }}>Can't find it? Check your spam or junk folder 📂</Text>
+                        </>
+                      : <>
+                          <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
+                            <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
+                          </TouchableOpacity>
+                          <Text style={{ color: 'rgba(110,231,183,0.6)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>📂 Email may land in your spam or junk folder</Text>
+                        </>
+                  ) : (
+                    foundUsername
+                      ? <View style={{ backgroundColor: 'rgba(74,222,128,0.15)', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 8 }}>
+                          <Text style={{ color: '#86efac', fontSize: 13, marginBottom: 4 }}>Your username is:</Text>
+                          <Text style={{ color: '#4ade80', fontSize: 24, fontWeight: '900' }}>@{foundUsername}</Text>
+                        </View>
+                      : <TouchableOpacity style={[styles.loginButton, { backgroundColor: '#6366f1' }]} onPress={handleForgotUsername}>
+                          <Text style={styles.loginButtonText}>Find My Username 🔍</Text>
                         </TouchableOpacity>
-                        <Text style={{ color: 'rgba(110,231,183,0.6)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>📂 Email may land in your spam or junk folder</Text>
-                      </>
-                  }
-                  <TouchableOpacity onPress={() => { setForgotMode(false); setForgotSent(false); }} style={{ alignSelf: 'center', marginTop: 10, padding: 8 }}>
+                  )}
+
+                  <TouchableOpacity onPress={resetRecovery} style={{ alignSelf: 'center', padding: 8, marginTop: 8 }}>
                     <Text style={{ color: '#86efac', fontSize: 13 }}>← Back to login</Text>
                   </TouchableOpacity>
                 </View>
@@ -947,9 +974,14 @@ export default function App() {
                   <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
                     <Text style={styles.loginButtonText}>Let's Go! 🌿</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setForgotMode(true)} style={{ alignSelf: 'center', marginTop: 12, padding: 8 }}>
-                    <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot password?</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 12 }}>
+                    <TouchableOpacity onPress={() => setForgotMode('password')} style={{ padding: 8 }}>
+                      <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot password?</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setForgotMode('username')} style={{ padding: 8 }}>
+                      <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot username?</Text>
+                    </TouchableOpacity>
+                  </View>
                   <Text style={{ color: 'rgba(110,231,183,0.5)', fontSize: 12, textAlign: 'center', marginTop: 4 }}>
                     Already have an account? Just type your username &amp; password above 👆
                   </Text>
