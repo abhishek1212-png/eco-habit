@@ -578,6 +578,8 @@ export default function App() {
       if (user) {
         setFirebaseUser(user);
         setLoggedIn(true);
+        const storedUname = await AsyncStorage.getItem('eco_username');
+        if (storedUname) setUsername(storedUname);
         await loadRemoteUserData(user.uid);
       } else {
         setFirebaseUser(null);
@@ -787,10 +789,17 @@ export default function App() {
       }
     } else {
       try {
-        const snap = await getDoc(doc(db, 'eco_usernames', uname));
-        if (!snap.exists()) { alert('Username not found. Check spelling or sign up.'); return; }
-        const email = (snap.data() as any).email as string;
-        const cred  = await signInWithEmailAndPassword(auth, email, password);
+        let email = '';
+        const cached = await AsyncStorage.getItem(`eco_email_cache_${uname}`);
+        if (cached) {
+          email = cached;
+        } else {
+          const snap = await getDoc(doc(db, 'eco_usernames', uname));
+          if (!snap.exists()) { alert('Username not found. Check spelling or sign up.'); return; }
+          email = (snap.data() as any).email as string;
+          await AsyncStorage.setItem(`eco_email_cache_${uname}`, email);
+        }
+        const cred = await signInWithEmailAndPassword(auth, email, password);
         await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
         await AsyncStorage.setItem('eco_username', uname);
         setUsername(uname); setLogin({ username: uname, password: '' });
@@ -798,7 +807,8 @@ export default function App() {
         await loadRemoteUserData(cred.user.uid);
       } catch (e: any) {
         if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password.');
-        else alert('Unable to sign in. Check your network.');
+        else if (e.code === 'auth/user-not-found') alert('Username not found. Check spelling or sign up.');
+        else alert(`Sign in failed: ${e.code || e.message}`);
       }
     }
   };
