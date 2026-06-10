@@ -547,7 +547,8 @@ export default function App() {
               />
 
               {/* Password */}
-              <Text style={{color:'#86efac',fontSize:13,fontWeight:'700',marginBottom:6}}>Your password</Text>
+              <Text style={{color:'#86efac',fontSize:13,fontWeight:'700',marginBottom:2}}>Your Eco Habit password</Text>
+              <Text style={{color:'rgba(110,231,183,0.6)',fontSize:11,marginBottom:6}}>Not your Gmail password — create a new one just for this app</Text>
               <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,marginBottom:16}}>
                 <TextInput
                   style={{flex:1,padding:14,color:'#ffffff',fontSize:15}}
