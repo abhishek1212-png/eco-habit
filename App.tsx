@@ -927,10 +927,16 @@ export default function App() {
                     autoCapitalize="none" keyboardType="email-address"
                   />
                   {forgotSent
-                    ? <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 8 }}>✅ Reset link sent! Check your inbox.</Text>
-                    : <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
-                        <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
-                      </TouchableOpacity>
+                    ? <>
+                        <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>✅ Reset link sent!</Text>
+                        <Text style={{ color: '#86efac', textAlign: 'center', fontSize: 12, marginBottom: 8 }}>Can't find it? Check your spam or junk folder 📂</Text>
+                      </>
+                    : <>
+                        <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
+                          <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
+                        </TouchableOpacity>
+                        <Text style={{ color: 'rgba(110,231,183,0.6)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>📂 Email may land in your spam or junk folder</Text>
+                      </>
                   }
                   <TouchableOpacity onPress={() => { setForgotMode(false); setForgotSent(false); }} style={{ alignSelf: 'center', marginTop: 10, padding: 8 }}>
                     <Text style={{ color: '#86efac', fontSize: 13 }}>← Back to login</Text>

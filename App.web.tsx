@@ -595,10 +595,16 @@ export default function App() {
                     autoCapitalize="none" keyboardType="email-address"
                   />
                   {forgotSent
-                    ? <Text style={{color:'#4ade80',textAlign:'center',fontWeight:'700',fontSize:14,marginBottom:8}}>✅ Reset link sent! Check your inbox.</Text>
-                    : <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:14,alignItems:'center',marginBottom:8}} onPress={handleForgotPassword}>
-                        <Text style={{color:'#fff',fontWeight:'900',fontSize:15}}>Send Reset Link 📧</Text>
-                      </TouchableOpacity>
+                    ? <>
+                        <Text style={{color:'#4ade80',textAlign:'center',fontWeight:'700',fontSize:14,marginBottom:4}}>✅ Reset link sent!</Text>
+                        <Text style={{color:'#86efac',textAlign:'center',fontSize:12,marginBottom:8}}>Can't find it? Check your spam or junk folder 📂</Text>
+                      </>
+                    : <>
+                        <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:14,alignItems:'center',marginBottom:6}} onPress={handleForgotPassword}>
+                          <Text style={{color:'#fff',fontWeight:'900',fontSize:15}}>Send Reset Link 📧</Text>
+                        </TouchableOpacity>
+                        <Text style={{color:'#86efac',fontSize:11,textAlign:'center',opacity:0.8}}>📂 Email may land in your spam or junk folder</Text>
+                      </>
                   }
                   <TouchableOpacity onPress={()=>{setForgotMode(false);setForgotSent(false);forgotEmail && setForgotEmail('');}} style={{alignSelf:'center',padding:8}}>
                     <Text style={{color:'#86efac',fontSize:13}}>← Back to login</Text>
