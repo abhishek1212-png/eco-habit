@@ -869,7 +869,7 @@ export default function App() {
               <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Your email</Text>
               <TextInput
                 style={styles.loginInput}
-                placeholder="your@email.com"
+                placeholder="Your email"
                 placeholderTextColor="rgba(110,231,183,0.6)"
                 value={login.email}
                 onChangeText={(v) => setLogin((p) => ({ ...p, email: v }))}
@@ -882,7 +882,7 @@ export default function App() {
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(110,231,183,0.3)', borderRadius: 14, marginBottom: 16 }}>
                 <TextInput
                   style={[styles.loginInput, { flex: 1, marginBottom: 0, borderWidth: 0, backgroundColor: 'transparent' }]}
-                  placeholder="At least 6 characters"
+                  placeholder="Your password"
                   placeholderTextColor="rgba(110,231,183,0.6)"
                   value={login.password}
                   onChangeText={(v) => setLogin((p) => ({ ...p, password: v }))}

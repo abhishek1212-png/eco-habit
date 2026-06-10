@@ -540,7 +540,7 @@ export default function App() {
               <Text style={{color:'#86efac',fontSize:13,fontWeight:'700',marginBottom:6}}>Your email</Text>
               <TextInput
                 style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#ffffff',marginBottom:16,fontSize:15}}
-                placeholder="your@email.com"
+                placeholder="Your email"
                 placeholderTextColor="#6b9e80"
                 value={login.email} onChangeText={v=>setLogin(p=>({...p,email:v}))}
                 autoCapitalize="none" keyboardType="email-address"
@@ -551,7 +551,7 @@ export default function App() {
               <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,marginBottom:16}}>
                 <TextInput
                   style={{flex:1,padding:14,color:'#ffffff',fontSize:15}}
-                  placeholder="At least 6 characters"
+                  placeholder="Your password"
                   placeholderTextColor="#6b9e80"
                   value={login.password} onChangeText={v=>setLogin(p=>({...p,password:v}))}
                   secureTextEntry={!showPassword}
@@ -586,7 +586,7 @@ export default function App() {
                   <Text style={{color:'#86efac',fontSize:13,marginBottom:12,textAlign:'center'}}>Enter your email and we'll send a reset link</Text>
                   <TextInput
                     style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#fff',marginBottom:12,fontSize:15}}
-                    placeholder="your@email.com" placeholderTextColor="#6b9e80"
+                    placeholder="Your email" placeholderTextColor="#6b9e80"
                     value={forgotEmail} onChangeText={setForgotEmail}
                     autoCapitalize="none" keyboardType="email-address"
                   />
