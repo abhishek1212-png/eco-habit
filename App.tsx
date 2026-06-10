@@ -778,6 +778,8 @@ export default function App() {
         const uid  = cred.user.uid;
         await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
         await AsyncStorage.setItem('eco_username', uname);
+        // Save username to Firestore immediately on signup
+        await setDoc(doc(db, 'eco_users', uid), { username: uname, habits: [], xp: 0, globalStreak: 0, lastActivityDate: null }, { merge: true });
         setUsername(uname); setLogin({ email, password: '' });
         setLoggedIn(true); setFirebaseUser(cred.user);
         await loadRemoteUserData(uid);
@@ -819,13 +821,20 @@ export default function App() {
     setLbLoading(true);
     try {
       const snap = await getDocs(collection(db, 'eco_users'));
+      const seen = new Set<string>();
       const users = snap.docs
         .map(d => {
           const data = d.data() as any;
           const totalXp = data.xp || 0;
           let lvl = 1, acc = 0;
           while (true) { const n = 100+(lvl-1)*20; if (totalXp<acc+n) break; acc+=n; lvl++; }
-          return { username: data.username || '—', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+          return { username: data.username || '', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+        })
+        .filter(u => {
+          if (!u.username) return false; // skip accounts with no username
+          if (seen.has(u.username)) return false; // skip duplicates
+          seen.add(u.username);
+          return true;
         })
         .sort((a,b) => b.xp - a.xp)
         .slice(0, 50)
