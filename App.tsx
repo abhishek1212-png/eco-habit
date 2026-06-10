@@ -388,14 +388,13 @@ export default function App() {
 
   // ── Auth state ────────────────────────────────────────────────────────────────
   const [loggedIn, setLoggedIn] = useState(false);
-  const [login, setLogin] = useState<{ username: string; password: string }>({ username: '', password: '' });
-  const [signupEmail, setSignupEmail] = useState('');
+  const [login, setLogin] = useState<{ email: string; password: string }>({ email: '', password: '' });
+  const [signupUsername, setSignupUsername] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [forgotMode, setForgotMode] = useState<'password'|'username'|null>(null);
+  const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
-  const [foundUsername, setFoundUsername] = useState<string|null>(null);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -522,8 +521,7 @@ export default function App() {
         if (storedCreds) {
           try {
             const creds = JSON.parse(storedCreds) as Credentials;
-            const uname = creds.email.replace('@eco-habit.app','');
-            setLogin({ username: uname, password: '' });
+            setLogin({ email: creds.email, password: '' });
           } catch {}
         }
         const storedUsername = await AsyncStorage.getItem('eco_username');
@@ -766,53 +764,54 @@ export default function App() {
   };
 
   const handleLogin = async () => {
-    const uname    = login.username.trim().toLowerCase();
+    const email    = login.email.trim().toLowerCase();
     const password = login.password;
-    if (!uname || !password) { alert('Enter username and password'); return; }
-    if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore only'); return; }
+    if (!email || !password) { alert('Enter your email and password'); return; }
+    if (!EMAIL_PATTERN.test(email)) { alert('Enter a valid email address'); return; }
 
     if (isSignup) {
-      const email = signupEmail.trim().toLowerCase();
-      if (!EMAIL_PATTERN.test(email)) { alert('Enter a valid email for password recovery'); return; }
+      const uname = signupUsername.trim().toLowerCase();
+      if (!uname) { alert('Pick a username'); return; }
+      if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore'); return; }
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const uid  = cred.user.uid;
-        await setDoc(doc(db, 'eco_usernames', uname), { uid, email });
         await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
         await AsyncStorage.setItem('eco_username', uname);
-        setUsername(uname); setLogin({ username: uname, password: '' });
+        setUsername(uname); setLogin({ email, password: '' });
         setLoggedIn(true); setFirebaseUser(cred.user);
         await loadRemoteUserData(uid);
       } catch (e: any) {
-        if (e.code === 'auth/email-already-in-use') alert('That email is already used.');
-        else alert('Could not create account. Try a different username or email.');
+        if (e.code === 'auth/email-already-in-use') alert('That email already has an account. Try logging in.');
+        else alert('Could not create account. Please try again.');
       }
     } else {
       try {
-        let email = '';
-        const cached = await AsyncStorage.getItem(`eco_email_cache_${uname}`);
-        if (cached) {
-          email = cached;
-        } else {
-          const snap = await getDoc(doc(db, 'eco_usernames', uname));
-          if (!snap.exists()) { alert('Username not found. Check spelling or sign up.'); return; }
-          email = (snap.data() as any).email as string;
-          await AsyncStorage.setItem(`eco_email_cache_${uname}`, email);
-        }
         const cred = await signInWithEmailAndPassword(auth, email, password);
         await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
-        await AsyncStorage.setItem('eco_username', uname);
-        setUsername(uname); setLogin({ username: uname, password: '' });
-        setLoggedIn(true); setFirebaseUser(cred.user);
+        setLogin({ email, password: '' }); setLoggedIn(true); setFirebaseUser(cred.user);
         await loadRemoteUserData(cred.user.uid);
       } catch (e: any) {
-        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password.');
-        else if (e.code === 'auth/user-not-found') alert('Username not found. Check spelling or sign up.');
-        else alert(`Sign in failed: ${e.code || e.message}`);
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password. Try again.');
+        else if (e.code === 'auth/user-not-found') alert('No account with that email. Sign up instead?');
+        else alert('Could not sign in. Check your connection.');
       }
     }
   };
 
+  const handleForgotPassword = async () => {
+    const email = forgotEmail.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) { alert('Enter your email address'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setForgotSent(true);
+    } catch (e: any) {
+      if (e.code === 'auth/user-not-found') alert('No account found with that email.');
+      else alert('Could not send reset email. Check your email address.');
+    }
+  };
+
+  const resetRecovery = () => { setForgotMode(false); setForgotEmail(''); setForgotSent(false); };
 
   const fetchLeaderboard = async (force = false) => {
     const now = Date.now();
@@ -837,35 +836,12 @@ export default function App() {
     setLbLoading(false);
   };
 
-  const handleForgotPassword = async () => {
-    const email = forgotEmail.trim().toLowerCase();
-    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you used to sign up'); return; }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setForgotSent(true);
-    } catch (e: any) {
-      if (e.code === 'auth/user-not-found') alert('No account found with that email.');
-      else alert('Could not send reset email. Check your email address.');
-    }
-  };
-
-  const handleForgotUsername = async () => {
-    const email = forgotEmail.trim().toLowerCase();
-    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you used to sign up'); return; }
-    try {
-      const snap = await getDocs(query(collection(db, 'eco_usernames'), where('email', '==', email)));
-      if (snap.empty) { alert('No account found with that email.'); return; }
-      setFoundUsername(snap.docs[0].id);
-    } catch { alert('Something went wrong. Try again.'); }
-  };
-
-  const resetRecovery = () => { setForgotMode(null); setForgotEmail(''); setForgotSent(false); setFoundUsername(null); };
 
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
     AsyncStorage.removeItem('eco_username').catch(() => {});
-    setLogin({ username: '', password: '' });
+    setLogin({ email: '', password: '' });
     setUsername('');
     setLoggedIn(false);
     setFirebaseUser(null);
@@ -890,16 +866,16 @@ export default function App() {
                 New or returning — just fill in your details
               </Text>
 
-              <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Your username</Text>
+              <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Your email</Text>
               <TextInput
                 style={styles.loginInput}
-                placeholder="e.g. greenplant42"
+                placeholder="your@email.com"
                 placeholderTextColor="rgba(110,231,183,0.6)"
-                value={login.username}
-                onChangeText={(v) => setLogin((p) => ({ ...p, username: v }))}
+                value={login.email}
+                onChangeText={(v) => setLogin((p) => ({ ...p, email: v }))}
                 autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="username"
+                keyboardType="email-address"
+                textContentType="emailAddress"
               />
 
               <Text style={{ color: '#86efac', fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Your password</Text>
@@ -920,30 +896,28 @@ export default function App() {
 
               <TouchableOpacity onPress={() => setIsSignup(p => !p)} style={{ marginBottom: 8 }}>
                 <Text style={{ color: '#86efac', fontSize: 13, textAlign: 'center' }}>
-                  {isSignup ? '▾ Hide email field' : '▸ New here? Add your email too'}
+                  {isSignup ? '▾ Already have an account? Hide this' : '▸ New here? Create your username'}
                 </Text>
               </TouchableOpacity>
               {isSignup && (
                 <>
-                  <Text style={{ color: '#86efac', fontSize: 12, marginBottom: 6, opacity: 0.8 }}>📧 Only needed if you forget your password</Text>
+                  <Text style={{ color: '#86efac', fontSize: 12, marginBottom: 6, opacity: 0.8 }}>👤 Pick a username — shown on leaderboard</Text>
                   <TextInput
                     style={styles.loginInput}
-                    placeholder="your@email.com"
+                    placeholder="e.g. greenplant42"
                     placeholderTextColor="rgba(110,231,183,0.6)"
-                    value={signupEmail}
-                    onChangeText={setSignupEmail}
+                    value={signupUsername}
+                    onChangeText={setSignupUsername}
                     autoCapitalize="none"
-                    keyboardType="email-address"
+                    autoCorrect={false}
                   />
                 </>
               )}
 
               {forgotMode ? (
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: 16, marginTop: 4 }}>
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginBottom: 4, textAlign: 'center' }}>
-                    {forgotMode === 'password' ? '🔑 Reset Password' : '👤 Find Username'}
-                  </Text>
-                  <Text style={{ color: '#86efac', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>Enter the email you signed up with</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginBottom: 4, textAlign: 'center' }}>🔑 Reset Password</Text>
+                  <Text style={{ color: '#86efac', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>Enter your email and we'll send a reset link</Text>
                   <TextInput
                     style={styles.loginInput}
                     placeholder="your@email.com"
@@ -952,29 +926,18 @@ export default function App() {
                     autoCapitalize="none" keyboardType="email-address"
                   />
 
-                  {forgotMode === 'password' ? (
-                    forgotSent
-                      ? <>
-                          <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>✅ Reset link sent!</Text>
-                          <Text style={{ color: '#86efac', textAlign: 'center', fontSize: 12, marginBottom: 8 }}>Can't find it? Check your spam or junk folder 📂</Text>
-                        </>
-                      : <>
-                          <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
-                            <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
-                          </TouchableOpacity>
-                          <Text style={{ color: 'rgba(110,231,183,0.6)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>📂 Email may land in your spam or junk folder</Text>
-                        </>
-                  ) : (
-                    foundUsername
-                      ? <View style={{ backgroundColor: 'rgba(74,222,128,0.15)', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 8 }}>
-                          <Text style={{ color: '#86efac', fontSize: 13, marginBottom: 4 }}>Your username is:</Text>
-                          <Text style={{ color: '#4ade80', fontSize: 24, fontWeight: '900' }}>@{foundUsername}</Text>
-                        </View>
-                      : <TouchableOpacity style={[styles.loginButton, { backgroundColor: '#6366f1' }]} onPress={handleForgotUsername}>
-                          <Text style={styles.loginButtonText}>Find My Username 🔍</Text>
+                  {forgotSent
+                    ? <>
+                        <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>✅ Reset link sent!</Text>
+                        <Text style={{ color: '#86efac', textAlign: 'center', fontSize: 12, marginBottom: 8 }}>Can't find it? Check your spam or junk folder 📂</Text>
+                      </>
+                    : <>
+                        <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
+                          <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
                         </TouchableOpacity>
-                  )}
-
+                        <Text style={{ color: 'rgba(110,231,183,0.6)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>📂 Email may land in your spam or junk folder</Text>
+                      </>
+                  }
                   <TouchableOpacity onPress={resetRecovery} style={{ alignSelf: 'center', padding: 8, marginTop: 8 }}>
                     <Text style={{ color: '#86efac', fontSize: 13 }}>← Back to login</Text>
                   </TouchableOpacity>
@@ -984,17 +947,9 @@ export default function App() {
                   <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
                     <Text style={styles.loginButtonText}>Let's Go! 🌿</Text>
                   </TouchableOpacity>
-                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 12 }}>
-                    <TouchableOpacity onPress={() => setForgotMode('password')} style={{ padding: 8 }}>
-                      <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot password?</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setForgotMode('username')} style={{ padding: 8 }}>
-                      <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot username?</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={{ color: 'rgba(110,231,183,0.5)', fontSize: 12, textAlign: 'center', marginTop: 4 }}>
-                    Already have an account? Just type your username &amp; password above 👆
-                  </Text>
+                  <TouchableOpacity onPress={() => setForgotMode(true)} style={{ alignSelf: 'center', marginTop: 12, padding: 8 }}>
+                    <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot password?</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
