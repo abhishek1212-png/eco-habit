@@ -1,6 +1,8 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Replace these values with your Firebase project settings.
 // Get them from the Firebase Console under Project Settings.
@@ -16,5 +18,21 @@ const firebaseConfig = {
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// On React Native, Firebase needs AsyncStorage to persist login sessions.
+// Without this, the user gets logged out every time the app restarts.
+let auth;
+try {
+  if (Platform.OS !== 'web') {
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } else {
+    auth = getAuth(app);
+  }
+} catch {
+  // Auth already initialized (e.g. hot reload) — just grab the existing instance
+  auth = getAuth(app);
+}
+
+export { auth };
 export const db = getFirestore(app);

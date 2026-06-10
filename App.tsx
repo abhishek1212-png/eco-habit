@@ -603,6 +603,11 @@ export default function App() {
     saveRemoteUserData(firebaseUser.uid);
   }, [habits, xp, notifMap, globalStreak, lastActivityDate, firebaseUser, customDeeds]);
 
+  // Force-refresh leaderboard every time the user opens that tab so streak is always current
+  useEffect(() => {
+    if (activeTab === 'leaderboard') fetchLeaderboard(true);
+  }, [activeTab]);
+
   useEffect(() => {
     if (!Notifications) return;
     (async () => {
@@ -1033,7 +1038,7 @@ export default function App() {
           <View style={styles.heroTop}>
             <Text style={styles.heroLogo}>🌿 Eco Habit</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity onPress={() => { setActiveTab('leaderboard'); fetchLeaderboard(); }} style={{ backgroundColor: '#6366f1', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+              <TouchableOpacity onPress={() => { setActiveTab('leaderboard'); fetchLeaderboard(true); }} style={{ backgroundColor: '#6366f1', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
                 <Text style={styles.heroSignOutTxt}>🏆 Leaderboard</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
