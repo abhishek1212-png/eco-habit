@@ -542,7 +542,7 @@ export default function App() {
     AsyncStorage.removeItem('eco_user_credentials').catch(()=>{});
     AsyncStorage.removeItem('eco_username').catch(()=>{});
     setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
-    setIsSignup(false); setActiveTab('home');
+    setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
 
   // ── Login Screen ──────────────────────────────────────────────────────────

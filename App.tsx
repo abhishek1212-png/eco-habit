@@ -872,6 +872,8 @@ export default function App() {
     AsyncStorage.removeItem('eco_username').catch(() => {});
     setLogin({ email: '', password: '' });
     setUsername('');
+    setIsSignup(false);
+    setSignupUsername('');
     setLoggedIn(false);
     setFirebaseUser(null);
     setActiveTab('home');
