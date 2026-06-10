@@ -206,6 +206,9 @@ export default function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
@@ -493,6 +496,18 @@ export default function App() {
   };
 
 
+  const handleForgotPassword = async () => {
+    const email = forgotEmail.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you used to sign up'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setForgotSent(true);
+    } catch (e: any) {
+      if (e.code === 'auth/user-not-found') alert('No account found with that email.');
+      else alert('Could not send reset email. Check your email address.');
+    }
+  };
+
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(()=>{});
@@ -569,12 +584,39 @@ export default function App() {
                 </>
               )}
 
-              <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:16,alignItems:'center',marginTop:4}} onPress={handleLogin}>
-                <Text style={{color:'#fff',fontWeight:'900',fontSize:17}}>Let's Go! 🌿</Text>
-              </TouchableOpacity>
-              <Text style={{color:'#6b9e80',fontSize:12,textAlign:'center',marginTop:12}}>
-                Already have an account? Just type your username &amp; password above 👆
-              </Text>
+              {forgotMode ? (
+                <View style={{backgroundColor:'rgba(255,255,255,0.07)',borderRadius:14,padding:16,marginTop:4}}>
+                  <Text style={{color:'#fff',fontWeight:'800',fontSize:16,marginBottom:6,textAlign:'center'}}>🔑 Reset Password</Text>
+                  <Text style={{color:'#86efac',fontSize:13,marginBottom:12,textAlign:'center'}}>Enter the email you signed up with</Text>
+                  <TextInput
+                    style={{backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(134,239,172,0.3)',borderRadius:14,padding:14,color:'#fff',marginBottom:12,fontSize:15}}
+                    placeholder="your@email.com" placeholderTextColor="#6b9e80"
+                    value={forgotEmail} onChangeText={setForgotEmail}
+                    autoCapitalize="none" keyboardType="email-address"
+                  />
+                  {forgotSent
+                    ? <Text style={{color:'#4ade80',textAlign:'center',fontWeight:'700',fontSize:14,marginBottom:8}}>✅ Reset link sent! Check your inbox.</Text>
+                    : <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:14,alignItems:'center',marginBottom:8}} onPress={handleForgotPassword}>
+                        <Text style={{color:'#fff',fontWeight:'900',fontSize:15}}>Send Reset Link 📧</Text>
+                      </TouchableOpacity>
+                  }
+                  <TouchableOpacity onPress={()=>{setForgotMode(false);setForgotSent(false);forgotEmail && setForgotEmail('');}} style={{alignSelf:'center',padding:8}}>
+                    <Text style={{color:'#86efac',fontSize:13}}>← Back to login</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:16,alignItems:'center',marginTop:4}} onPress={handleLogin}>
+                    <Text style={{color:'#fff',fontWeight:'900',fontSize:17}}>Let's Go! 🌿</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={()=>setForgotMode(true)} style={{alignSelf:'center',marginTop:12,padding:8}}>
+                    <Text style={{color:'#86efac',fontSize:13}}>Forgot password?</Text>
+                  </TouchableOpacity>
+                  <Text style={{color:'#6b9e80',fontSize:12,textAlign:'center',marginTop:4}}>
+                    Already have an account? Just type your username &amp; password above 👆
+                  </Text>
+                </>
+              )}
             </Animated.View>
           </View>
         </LinearGradient>

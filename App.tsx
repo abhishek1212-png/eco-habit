@@ -30,6 +30,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
@@ -391,6 +392,9 @@ export default function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -822,6 +826,18 @@ export default function App() {
     setLbLoading(false);
   };
 
+  const handleForgotPassword = async () => {
+    const email = forgotEmail.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) { alert('Enter the email you used to sign up'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setForgotSent(true);
+    } catch (e: any) {
+      if (e.code === 'auth/user-not-found') alert('No account found with that email.');
+      else alert('Could not send reset email. Check your email address.');
+    }
+  };
+
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
     AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
@@ -899,12 +915,40 @@ export default function App() {
                 </>
               )}
 
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
-                <Text style={styles.loginButtonText}>Let's Go! 🌿</Text>
-              </TouchableOpacity>
-              <Text style={{ color: 'rgba(110,231,183,0.5)', fontSize: 12, textAlign: 'center', marginTop: 12 }}>
-                Already have an account? Just type your username &amp; password above 👆
-              </Text>
+              {forgotMode ? (
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: 16, marginTop: 4 }}>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginBottom: 6, textAlign: 'center' }}>🔑 Reset Password</Text>
+                  <Text style={{ color: '#86efac', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>Enter the email you signed up with</Text>
+                  <TextInput
+                    style={styles.loginInput}
+                    placeholder="your@email.com"
+                    placeholderTextColor="rgba(110,231,183,0.6)"
+                    value={forgotEmail} onChangeText={setForgotEmail}
+                    autoCapitalize="none" keyboardType="email-address"
+                  />
+                  {forgotSent
+                    ? <Text style={{ color: '#4ade80', textAlign: 'center', fontWeight: '700', fontSize: 14, marginBottom: 8 }}>✅ Reset link sent! Check your inbox.</Text>
+                    : <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
+                        <Text style={styles.loginButtonText}>Send Reset Link 📧</Text>
+                      </TouchableOpacity>
+                  }
+                  <TouchableOpacity onPress={() => { setForgotMode(false); setForgotSent(false); }} style={{ alignSelf: 'center', marginTop: 10, padding: 8 }}>
+                    <Text style={{ color: '#86efac', fontSize: 13 }}>← Back to login</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.loginButton} onPress={handleLogin} accessibilityRole="button">
+                    <Text style={styles.loginButtonText}>Let's Go! 🌿</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setForgotMode(true)} style={{ alignSelf: 'center', marginTop: 12, padding: 8 }}>
+                    <Text style={{ color: '#86efac', fontSize: 13 }}>Forgot password?</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: 'rgba(110,231,183,0.5)', fontSize: 12, textAlign: 'center', marginTop: 4 }}>
+                    Already have an account? Just type your username &amp; password above 👆
+                  </Text>
+                </>
+              )}
             </View>
           </ScrollView>
         </LinearGradient>
