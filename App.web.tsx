@@ -210,6 +210,8 @@ export default function App() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [username, setUsername] = useState('');
+  const [needsUsername, setNeedsUsername] = useState(false);
+  const [pendingUsername, setPendingUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
@@ -301,9 +303,20 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setFirebaseUser(user); setLoggedIn(true);
-        // Restore username from storage on auto-login
-        const storedUname = await AsyncStorage.getItem('eco_username');
-        if (storedUname) setUsername(storedUname);
+        // Load from Firestore first (most reliable source)
+        const snap = await getDoc(doc(db,'eco_users',user.uid));
+        if (snap.exists()) {
+          const data = snap.data() as any;
+          if (data.username) {
+            setUsername(data.username);
+            await AsyncStorage.setItem('eco_username', data.username);
+          } else {
+            // Existing account with no username — prompt once
+            const storedUname = await AsyncStorage.getItem('eco_username');
+            if (storedUname) setUsername(storedUname);
+            else setNeedsUsername(true);
+          }
+        }
         await loadRemoteUserData(user.uid);
       } else {
         setFirebaseUser(null); setLoggedIn(false);
@@ -628,6 +641,42 @@ export default function App() {
               )}
             </Animated.View>
           </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Username Setup (existing users with no username) ─────────────────────
+  if (needsUsername) {
+    return (
+      <SafeAreaView style={{flex:1,backgroundColor:'#011a12',minHeight:'100vh' as any}}>
+        <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{flex:1,minHeight:'100vh' as any,alignItems:'center',justifyContent:'center',padding:24}} start={[0,0]} end={[1,1]}>
+          <Text style={{fontSize:32,marginBottom:12}}>👤</Text>
+          <Text style={{color:'#fff',fontSize:20,fontWeight:'900',marginBottom:6}}>One last thing!</Text>
+          <Text style={{color:'#6ee7b7',fontSize:14,marginBottom:28,textAlign:'center'}}>Pick a username — shown on the leaderboard</Text>
+          <TextInput
+            style={{width:'100%',maxWidth:360,backgroundColor:'rgba(255,255,255,0.08)',borderWidth:1,borderColor:'rgba(110,231,183,0.3)',borderRadius:14,padding:14,color:'#fff',fontSize:15,marginBottom:16}}
+            placeholder="e.g. greenplant42"
+            placeholderTextColor="rgba(110,231,183,0.5)"
+            value={pendingUsername}
+            onChangeText={setPendingUsername}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            style={{width:'100%',maxWidth:360,backgroundColor:'#10b981',borderRadius:14,paddingVertical:15,alignItems:'center'}}
+            onPress={async()=>{
+              const uname = pendingUsername.trim().toLowerCase();
+              if (!uname) { alert('Enter a username'); return; }
+              if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('3–20 chars, letters/numbers/underscore only'); return; }
+              if (firebaseUser) {
+                await setDoc(doc(db,'eco_users',firebaseUser.uid),{username:uname},{merge:true});
+                await AsyncStorage.setItem('eco_username', uname);
+              }
+              setUsername(uname);
+              setNeedsUsername(false);
+            }}>
+            <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>Save Username 🌿</Text>
+          </TouchableOpacity>
         </LinearGradient>
       </SafeAreaView>
     );

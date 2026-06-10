@@ -576,8 +576,18 @@ export default function App() {
       if (user) {
         setFirebaseUser(user);
         setLoggedIn(true);
-        const storedUname = await AsyncStorage.getItem('eco_username');
-        if (storedUname) setUsername(storedUname);
+        // Load username from Firestore first
+        const snapU = await getDoc(doc(db, 'eco_users', user.uid));
+        if (snapU.exists()) {
+          const dataU = snapU.data() as any;
+          if (dataU.username) {
+            setUsername(dataU.username);
+            await AsyncStorage.setItem('eco_username', dataU.username);
+          } else {
+            const storedUname = await AsyncStorage.getItem('eco_username');
+            if (storedUname) setUsername(storedUname);
+          }
+        }
         await loadRemoteUserData(user.uid);
       } else {
         setFirebaseUser(null);
