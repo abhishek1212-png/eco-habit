@@ -33,7 +33,7 @@ import {
   sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
 
 type Habit = {
   id: string;
@@ -840,7 +840,9 @@ export default function App() {
     if (!force && leaderboard.length > 0 && now - lbLastFetch.current < 60_000) return;
     setLbLoading(true);
     try {
-      const snap = await getDocs(collection(db, 'eco_users'));
+      const snap = force
+        ? await getDocsFromServer(collection(db, 'eco_users'))
+        : await getDocs(collection(db, 'eco_users'));
       const seen = new Set<string>();
       const users = snap.docs
         .map(d => {
