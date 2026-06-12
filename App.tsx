@@ -847,7 +847,7 @@ export default function App() {
         ? await getDocsFromServer(collection(db, 'eco_users'))
         : await getDocs(collection(db, 'eco_users'));
       const seen = new Set<string>();
-      const users = snap.docs
+      let users = snap.docs
         .map(d => {
           const data = d.data() as any;
           const totalXp = data.xp || 0;
@@ -856,15 +856,25 @@ export default function App() {
           return { username: data.username || '', xp: totalXp, streak: data.globalStreak||0, level: lvl };
         })
         .filter(u => {
-          if (!u.username) return false; // skip accounts with no username
-          if (seen.has(u.username)) return false; // skip duplicates
+          if (!u.username) return false;
+          if (seen.has(u.username)) return false;
           seen.add(u.username);
           return true;
-        })
+        });
+      // Always use local state for the current user so streak/XP is never stale
+      if (username) {
+        users = users.map(u => {
+          if (u.username !== username) return u;
+          let lvl = 1, acc = 0;
+          while (true) { const n = 100+(lvl-1)*20; if (xp<acc+n) break; acc+=n; lvl++; }
+          return { ...u, xp, streak: globalStreak, level: lvl };
+        });
+      }
+      const ranked = users
         .sort((a,b) => b.xp - a.xp)
         .slice(0, 50)
         .map((u, i) => ({ ...u, rank: i+1 }));
-      setLeaderboard(users);
+      setLeaderboard(ranked);
       lbLastFetch.current = Date.now();
     } catch {}
     setLbLoading(false);
