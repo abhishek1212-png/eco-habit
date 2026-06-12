@@ -213,6 +213,7 @@ export default function App() {
   const [needsUsername, setNeedsUsername] = useState(false);
   const [pendingUsername, setPendingUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const remoteDataLoaded = useRef(false);
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
   const [lbLoading, setLbLoading] = useState(false);
@@ -327,6 +328,7 @@ export default function App() {
 
   useEffect(() => {
     if (!firebaseUser) return;
+    if (!remoteDataLoaded.current) return; // don't overwrite Firestore before loading real data
     saveRemoteUserData(firebaseUser.uid);
   }, [habits, xp, globalStreak, lastActivityDate, customDeeds, firebaseUser]);
 
@@ -381,6 +383,7 @@ export default function App() {
       } else {
         await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate });
       }
+      remoteDataLoaded.current = true;
     } catch {}
   };
   const saveRemoteUserData = async (uid: string) => {

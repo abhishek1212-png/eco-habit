@@ -398,6 +398,7 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const remoteDataLoaded = useRef(false);
 
   // ── Streak state ──────────────────────────────────────────────────────────────
   const [globalStreak, setGlobalStreak] = useState(0);
@@ -600,6 +601,7 @@ export default function App() {
 
   useEffect(() => {
     if (!firebaseUser) return;
+    if (!remoteDataLoaded.current) return; // don't overwrite Firestore before loading real data
     saveRemoteUserData(firebaseUser.uid);
   }, [habits, xp, notifMap, globalStreak, lastActivityDate, firebaseUser, customDeeds]);
 
@@ -644,6 +646,7 @@ export default function App() {
       } else {
         await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate });
       }
+      remoteDataLoaded.current = true;
     } catch (err) {
       console.log('Failed to load remote user data', err);
     }
