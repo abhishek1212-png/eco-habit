@@ -16,7 +16,7 @@
 
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.ecohabit",
+      "bundleIdentifier": "com.sidpid.ecohabit",
       "buildNumber": "1",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Eco Habit uses notifications to remind you of your scheduled eco-friendly habits.",
@@ -29,7 +29,7 @@
     },
 
     "android": {
-      "package": "com.yourname.ecohabit",
+      "package": "com.sidpid.ecohabit",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
