@@ -202,6 +202,7 @@ export default function App() {
   const [xp, setXp] = useState(0);
 
   const [loggedIn, setLoggedIn] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [login, setLogin] = useState<LoginState>({ email: '', password: '' });
   const [signupUsername, setSignupUsername] = useState('');
   const [isSignup, setIsSignup] = useState(false);
@@ -322,6 +323,7 @@ export default function App() {
       } else {
         setFirebaseUser(null); setLoggedIn(false);
       }
+      setAuthLoading(false);
     });
     return unsub;
   }, []);
@@ -387,7 +389,7 @@ export default function App() {
     } catch {}
   };
   const saveRemoteUserData = async (uid: string) => {
-    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds, username }, { merge:true }); } catch {}
+    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds }, { merge:true }); } catch {}
   };
 
   const fetchLeaderboard = async (force = false) => {
@@ -490,7 +492,7 @@ export default function App() {
         setLastActivityDate(today); setStreakBroken(false);
         // Save immediately so leaderboard is always up to date
         if (firebaseUser) {
-          setDoc(doc(db,'eco_users',firebaseUser.uid), { globalStreak: newGlobal, lastActivityDate: today, xp: newXp, username }, { merge: true }).catch(()=>{});
+          setDoc(doc(db,'eco_users',firebaseUser.uid), { globalStreak: newGlobal, lastActivityDate: today, xp: newXp }, { merge: true }).catch(()=>{});
         }
       }
     } else {
@@ -559,6 +561,16 @@ export default function App() {
     setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
     setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
+
+  // ── Auth loading screen ───────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <SafeAreaView style={{flex:1,backgroundColor:'#022c22',justifyContent:'center',alignItems:'center',minHeight:'100vh' as any}}>
+        <Text style={{fontSize:40,marginBottom:16}}>🌿</Text>
+        <Text style={{color:'#4ade80',fontSize:16,fontWeight:'700'}}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   // ── Login Screen ──────────────────────────────────────────────────────────
   if (!loggedIn) {
