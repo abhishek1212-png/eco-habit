@@ -386,7 +386,9 @@ export default function App() {
         await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate });
       }
       remoteDataLoaded.current = true;
-    } catch {}
+    } catch {
+      remoteDataLoaded.current = true; // allow saves even if load failed
+    }
   };
   const saveRemoteUserData = async (uid: string) => {
     try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds }, { merge:true }); } catch {}
@@ -1077,7 +1079,7 @@ export default function App() {
             </View>
           </View>
 
-          <Text style={{color:'#9ca3af',textAlign:'center',fontSize:12,marginTop:8}}>Made with ♻️ and 🌱</Text>
+          <Text style={{color:'#9ca3af',textAlign:'center',fontSize:12,marginTop:8}}>Made by Siddharth</Text>
         </View>
         </View>
       </ScrollView>}

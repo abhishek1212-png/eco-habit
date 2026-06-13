@@ -649,6 +649,7 @@ export default function App() {
       remoteDataLoaded.current = true;
     } catch (err) {
       console.log('Failed to load remote user data', err);
+      remoteDataLoaded.current = true; // allow saves even if load failed
     }
   };
 
@@ -1378,7 +1379,7 @@ export default function App() {
 
           <View style={styles.footer}>
             <Button title="Clear completed" onPress={clearCompleted} />
-            <Text style={styles.footerNote}>Made with ♻️ and 🌱</Text>
+            <Text style={styles.footerNote}>Made by Siddharth</Text>
           </View>
 
         </LinearGradient>{/* end content */}
