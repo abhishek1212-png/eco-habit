@@ -407,6 +407,9 @@ export default function App() {
   const [lastActivityDate, setLastActivityDate] = useState<string | null>(null);
   const [streakBroken, setStreakBroken] = useState(false);
 
+  // ── Leaderboard consent ───────────────────────────────────────────────────────
+  const [leaderboardConsent, setLeaderboardConsent] = useState<boolean | null>(null);
+
   // ── UI state ──────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
@@ -590,6 +593,14 @@ export default function App() {
             const storedUname = await AsyncStorage.getItem('eco_username');
             if (storedUname) setUsername(storedUname);
           }
+          // Load leaderboard consent
+          if (typeof dataU.leaderboardConsent === 'boolean') {
+            setLeaderboardConsent(dataU.leaderboardConsent);
+          } else {
+            setLeaderboardConsent(null); // needs to ask
+          }
+        } else {
+          setLeaderboardConsent(null);
         }
         await loadRemoteUserData(user.uid);
       } else {
@@ -658,7 +669,9 @@ export default function App() {
   const saveRemoteUserData = async (uid: string) => {
     try {
       const userDoc = doc(db, 'eco_users', uid);
-      await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate, customDeeds }, { merge: true });
+      // Only include leaderboard-visible fields if user consented
+      const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { username: null, globalStreak: 0 };
+      await setDoc(userDoc, { habits, notifMap, lastActivityDate, customDeeds, ...leaderboardFields }, { merge: true });
     } catch (err) {
       console.log('Failed to save remote user data', err);
     }
@@ -1039,6 +1052,37 @@ export default function App() {
               )}
             </View>
           </ScrollView>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Leaderboard Consent Screen ────────────────────────────────────────────────
+
+  if (leaderboardConsent === null) {
+    const giveConsent = async (agreed: boolean) => {
+      setLeaderboardConsent(agreed);
+      if (firebaseUser) {
+        setDoc(doc(db, 'eco_users', firebaseUser.uid), { leaderboardConsent: agreed }, { merge: true }).catch(() => {});
+      }
+    };
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={[styles.gradient,{justifyContent:'center',alignItems:'center',padding:32}]} start={[0,0]} end={[1,1]}>
+          <Text style={{fontSize:48,marginBottom:16}}>🏆</Text>
+          <Text style={{color:'#4ade80',fontSize:22,fontWeight:'900',textAlign:'center',marginBottom:12}}>Join the Leaderboard?</Text>
+          <Text style={{color:'#d1fae5',fontSize:15,textAlign:'center',marginBottom:8,lineHeight:22}}>
+            Eco Habit has a global leaderboard that shows your <Text style={{fontWeight:'800'}}>username</Text>, <Text style={{fontWeight:'800'}}>streak</Text>, <Text style={{fontWeight:'800'}}>XP</Text> and <Text style={{fontWeight:'800'}}>level</Text> to other users.
+          </Text>
+          <Text style={{color:'#86efac',fontSize:13,textAlign:'center',marginBottom:32,lineHeight:20}}>
+            Your email is never shared. You can change this in settings anytime.
+          </Text>
+          <TouchableOpacity onPress={() => giveConsent(true)} style={{backgroundColor:'#22c55e',borderRadius:16,paddingVertical:14,paddingHorizontal:40,marginBottom:12,width:'100%',alignItems:'center'}}>
+            <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>✅ Yes, show me on leaderboard</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => giveConsent(false)} style={{backgroundColor:'#374151',borderRadius:16,paddingVertical:14,paddingHorizontal:40,width:'100%',alignItems:'center'}}>
+            <Text style={{color:'#d1d5db',fontWeight:'700',fontSize:15}}>No thanks, keep me private</Text>
+          </TouchableOpacity>
         </LinearGradient>
       </SafeAreaView>
     );

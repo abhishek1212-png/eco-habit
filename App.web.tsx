@@ -216,6 +216,7 @@ export default function App() {
   const [pendingUsername, setPendingUsername] = useState('');
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const remoteDataLoaded = useRef(false);
+  const [leaderboardConsent, setLeaderboardConsent] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
   const [lbLoading, setLbLoading] = useState(false);
@@ -319,6 +320,14 @@ export default function App() {
             if (storedUname) setUsername(storedUname);
             else setNeedsUsername(true);
           }
+          // Load leaderboard consent
+          if (typeof data.leaderboardConsent === 'boolean') {
+            setLeaderboardConsent(data.leaderboardConsent);
+          } else {
+            setLeaderboardConsent(null);
+          }
+        } else {
+          setLeaderboardConsent(null);
         }
         await loadRemoteUserData(user.uid);
       } else {
@@ -392,7 +401,10 @@ export default function App() {
     }
   };
   const saveRemoteUserData = async (uid: string) => {
-    try { await setDoc(doc(db,'eco_users',uid), { habits, xp, globalStreak, lastActivityDate, customDeeds }, { merge:true }); } catch {}
+    try {
+      const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { username: null, globalStreak: 0 };
+      await setDoc(doc(db,'eco_users',uid), { habits, lastActivityDate, customDeeds, ...leaderboardFields }, { merge:true });
+    } catch {}
   };
 
   const fetchLeaderboard = async (force = false) => {
@@ -737,6 +749,36 @@ export default function App() {
               setNeedsUsername(false);
             }}>
             <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>Save Username 🌿</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Leaderboard Consent Screen ────────────────────────────────────────────
+  if (leaderboardConsent === null) {
+    const giveConsent = async (agreed: boolean) => {
+      setLeaderboardConsent(agreed);
+      if (firebaseUser) {
+        setDoc(doc(db, 'eco_users', firebaseUser.uid), { leaderboardConsent: agreed }, { merge: true }).catch(() => {});
+      }
+    };
+    return (
+      <SafeAreaView style={{flex:1,backgroundColor:'#011a12',minHeight:'100vh' as any}}>
+        <LinearGradient colors={['#011a12','#022c22','#064e3b']} style={{flex:1,minHeight:'100vh' as any,alignItems:'center',justifyContent:'center',padding:32}} start={[0,0]} end={[1,1]}>
+          <Text style={{fontSize:56,marginBottom:16}}>🏆</Text>
+          <Text style={{color:'#4ade80',fontSize:24,fontWeight:'900',textAlign:'center',marginBottom:12}}>Join the Leaderboard?</Text>
+          <Text style={{color:'#d1fae5',fontSize:15,textAlign:'center',marginBottom:8,lineHeight:24,maxWidth:400}}>
+            Eco Habit has a global leaderboard that shows your <Text style={{fontWeight:'800'}}>username</Text>, <Text style={{fontWeight:'800'}}>streak</Text>, <Text style={{fontWeight:'800'}}>XP</Text> and <Text style={{fontWeight:'800'}}>level</Text> to other users.
+          </Text>
+          <Text style={{color:'#86efac',fontSize:13,textAlign:'center',marginBottom:40,maxWidth:400}}>
+            Your email is never shared. You can change this at any time.
+          </Text>
+          <TouchableOpacity onPress={() => giveConsent(true)} style={{backgroundColor:'#22c55e',borderRadius:16,paddingVertical:14,paddingHorizontal:40,marginBottom:12,width:320,alignItems:'center'}}>
+            <Text style={{color:'#fff',fontWeight:'900',fontSize:16}}>✅ Yes, show me on leaderboard</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => giveConsent(false)} style={{backgroundColor:'#374151',borderRadius:16,paddingVertical:14,paddingHorizontal:40,width:320,alignItems:'center'}}>
+            <Text style={{color:'#d1d5db',fontWeight:'700',fontSize:15}}>No thanks, keep me private</Text>
           </TouchableOpacity>
         </LinearGradient>
       </SafeAreaView>
