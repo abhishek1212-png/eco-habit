@@ -35,10 +35,11 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  deleteUser,
   type User,
 } from 'firebase/auth';
 // eco_usernames/{username} → { uid, email }  (reverse-lookup for login)
-import { doc, getDoc, setDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Habit = {
@@ -564,6 +565,26 @@ export default function App() {
     setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Delete your account? This will permanently remove all your eco data (habits, streak, XP). This cannot be undone.')) return;
+    if (!window.confirm('Are you sure? This is permanent.')) return;
+    try {
+      if (firebaseUser) {
+        await deleteDoc(doc(db, 'eco_users', firebaseUser.uid));
+        await deleteUser(firebaseUser);
+      }
+    } catch (e: any) {
+      if (e?.code === 'auth/requires-recent-login') {
+        alert('Please sign out and sign back in, then try deleting your account again.');
+        return;
+      }
+    }
+    await AsyncStorage.removeItem('eco_user_credentials');
+    await AsyncStorage.removeItem('eco_username');
+    setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
+    setIsSignup(false); setSignupUsername(''); setActiveTab('home');
+  };
+
   // ── Auth loading screen ───────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -793,6 +814,9 @@ export default function App() {
               </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={{backgroundColor:'#f59e0b',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
                 <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>Sign out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDeleteAccount} style={{backgroundColor:'#7f1d1d',borderRadius:20,paddingHorizontal:14,paddingVertical:6}}>
+                <Text style={{color:'#fff',fontWeight:'700',fontSize:12}}>🗑 Delete</Text>
               </TouchableOpacity>
             </View>
           </View>

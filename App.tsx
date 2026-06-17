@@ -10,6 +10,7 @@ try {
   Notifications = null;
 }
 import {
+  Alert,
   Animated,
   Button,
   Easing,
@@ -31,9 +32,10 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  deleteUser,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
 
 type Habit = {
   id: string;
@@ -895,6 +897,41 @@ export default function App() {
     setActiveTab('home');
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your eco data (habits, streak, XP). This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            try {
+              if (firebaseUser) {
+                await deleteDoc(doc(db, 'eco_users', firebaseUser.uid));
+                await deleteUser(firebaseUser);
+              }
+            } catch (e: any) {
+              if (e?.code === 'auth/requires-recent-login') {
+                Alert.alert('Please sign out and sign back in, then try deleting your account again.');
+                return;
+              }
+            }
+            await AsyncStorage.removeItem('eco_user_credentials');
+            await AsyncStorage.removeItem('eco_username');
+            setLogin({ email: '', password: '' });
+            setUsername('');
+            setIsSignup(false);
+            setSignupUsername('');
+            setLoggedIn(false);
+            setFirebaseUser(null);
+            setActiveTab('home');
+          },
+        },
+      ]
+    );
+  };
+
   // ── Login Screen ──────────────────────────────────────────────────────────────
 
   if (!loggedIn) {
@@ -1061,6 +1098,9 @@ export default function App() {
               </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
                 <Text style={styles.heroSignOutTxt}>Sign out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDeleteAccount} style={[styles.heroSignOut, { backgroundColor: '#7f1d1d' }]}>
+                <Text style={styles.heroSignOutTxt}>🗑 Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
