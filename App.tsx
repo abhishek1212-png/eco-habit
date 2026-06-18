@@ -1143,9 +1143,6 @@ export default function App() {
               <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
                 <Text style={styles.heroSignOutTxt}>Sign out</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleDeleteAccount} style={[styles.heroSignOut, { backgroundColor: '#7f1d1d' }]}>
-                <Text style={styles.heroSignOutTxt}>🗑 Delete</Text>
-              </TouchableOpacity>
             </View>
           </View>
           <Text style={styles.heroTagline}>
@@ -1464,6 +1461,17 @@ export default function App() {
           <View style={styles.footer}>
             <Button title="Clear completed" onPress={clearCompleted} />
             <Text style={styles.footerNote}>Made by Siddharth</Text>
+          </View>
+
+          {/* ── Account Deletion ── */}
+          <View style={{ marginHorizontal: 16, marginBottom: 24, marginTop: 8 }}>
+            <TouchableOpacity
+              onPress={handleDeleteAccount}
+              style={{ backgroundColor: '#7f1d1d', borderRadius: 14, paddingVertical: 16, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>🗑 Delete Account</Text>
+              <Text style={{ color: '#fca5a5', fontSize: 12, marginTop: 4 }}>Permanently deletes all your data</Text>
+            </TouchableOpacity>
           </View>
 
         </LinearGradient>{/* end content */}
