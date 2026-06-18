@@ -939,6 +939,7 @@ export default function App() {
             setLoggedIn(false);
             setFirebaseUser(null);
             setActiveTab('home');
+            Alert.alert('Account Deleted', 'Your account and all your data have been permanently deleted.');
           },
         },
       ]
