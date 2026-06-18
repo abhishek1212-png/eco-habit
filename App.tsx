@@ -1465,10 +1465,10 @@ export default function App() {
           </View>
 
           {/* ── Account Deletion ── */}
-          <View style={{ marginHorizontal: 16, marginBottom: 24, marginTop: 8 }}>
+          <View style={{ marginHorizontal: 16, marginBottom: 24, marginTop: 32, alignItems: 'flex-start' }}>
             <TouchableOpacity
               onPress={handleDeleteAccount}
-              style={{ backgroundColor: '#7f1d1d', borderRadius: 14, paddingVertical: 16, alignItems: 'center' }}
+              style={{ backgroundColor: '#7f1d1d', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 24, alignItems: 'center' }}
             >
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>🗑 Delete Account</Text>
               <Text style={{ color: '#fca5a5', fontSize: 12, marginTop: 4 }}>Permanently deletes all your data</Text>
