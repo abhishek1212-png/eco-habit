@@ -1388,12 +1388,14 @@ export default function App() {
                 value={time}
                 onChangeText={setTime}
                 onSubmitEditing={add}
+                keyboardType="numbers-and-punctuation"
               />
               <TextInput
                 style={[styles.input, { width: 90, marginRight: 8 }]}
                 placeholder="MM-DD"
                 value={date}
                 onChangeText={setDate}
+                keyboardType="numbers-and-punctuation"
               />
               <TouchableOpacity
                 style={styles.autoButton}
