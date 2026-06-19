@@ -15,6 +15,7 @@ import {
   Button,
   Easing,
   FlatList,
+  KeyboardAvoidingView,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -953,6 +954,7 @@ export default function App() {
       <SafeAreaView style={styles.safeArea}>
         <LinearGradient colors={['#022c22','#064e3b','#065f46']} style={styles.gradient} start={[0, 0]} end={[1, 1]}>
           <StatusBar style="light" />
+          <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView contentContainerStyle={styles.loginContainer} keyboardShouldPersistTaps="handled">
             <EarthMascot />
             <Text style={styles.loginTitle}>🌿 Eco Habit</Text>
@@ -1053,6 +1055,7 @@ export default function App() {
               )}
             </View>
           </ScrollView>
+          </KeyboardAvoidingView>
         </LinearGradient>
       </SafeAreaView>
     );
