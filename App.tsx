@@ -590,10 +590,8 @@ export default function App() {
           if (dataU.username) {
             setUsername(dataU.username);
             await AsyncStorage.setItem('eco_username', dataU.username);
-          } else {
-            const storedUname = await AsyncStorage.getItem('eco_username');
-            if (storedUname) setUsername(storedUname);
           }
+          // If no Firestore username, keep whatever AsyncStorage already loaded — don't overwrite
           // Load leaderboard consent
           if (typeof dataU.leaderboardConsent === 'boolean') {
             setLeaderboardConsent(dataU.leaderboardConsent);
@@ -621,7 +619,7 @@ export default function App() {
 
   // Force-refresh leaderboard every time the user opens that tab so streak is always current
   useEffect(() => {
-    if (activeTab === 'leaderboard') fetchLeaderboard(true);
+    if (activeTab === 'leaderboard') { lbLastFetch.current = 0; fetchLeaderboard(true); }
   }, [activeTab]);
 
   useEffect(() => {
