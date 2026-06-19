@@ -2,18 +2,16 @@
   "expo": {
     "name": "Eco Habit",
     "slug": "eco-habit",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0d3b2e"
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sidpid.ecohabit",
@@ -27,7 +25,6 @@
         "usesNonExemptEncryption": false
       }
     },
-
     "android": {
       "package": "com.sidpid.ecohabit",
       "versionCode": 1,
@@ -41,12 +38,10 @@
       ],
       "edgeToEdgeEnabled": true
     },
-
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-
     "plugins": [
       [
         "expo-notifications",
@@ -57,11 +52,11 @@
         }
       ]
     ],
-
     "extra": {
       "eas": {
-        "projectId": "replace-with-your-eas-project-id"
+        "projectId": "81a82004-0223-4eaf-a632-12ea8e4d7e21"
       }
-    }
+    },
+    "owner": "sidpid"
   }
 }
