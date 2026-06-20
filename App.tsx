@@ -532,7 +532,7 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const [habitsStr, xpStr, notifStr, storedCreds, streakStr, lastDateStr, customDeedsStr] =
+        const [habitsStr, xpStr, notifStr, storedCreds, streakStr, lastDateStr, customDeedsStr, carbonStr] =
           await Promise.all([
             AsyncStorage.getItem('eco_habits'),
             AsyncStorage.getItem('eco_xp'),
@@ -541,10 +541,12 @@ export default function App() {
             AsyncStorage.getItem('eco_global_streak'),
             AsyncStorage.getItem('eco_last_activity_date'),
             AsyncStorage.getItem('eco_custom_deeds'),
+            AsyncStorage.getItem('eco_lifetime_carbon'),
           ]);
 
         if (habitsStr) setHabits(JSON.parse(habitsStr));
         if (xpStr) setXp(parseInt(xpStr, 10));
+        if (carbonStr) setLifetimeCarbonKg(parseFloat(carbonStr) || 0);
         if (customDeedsStr) { try { setCustomDeeds(JSON.parse(customDeedsStr)); } catch {} }
         if (notifStr) { try { setNotifMap(JSON.parse(notifStr)); } catch {} }
         if (storedCreds) {
@@ -558,7 +560,7 @@ export default function App() {
 
         // Global streak — check for break on load
         const savedStreak = streakStr ? parseInt(streakStr, 10) : 0;
-        const savedLastDate = lastDateStr ?? null;
+        const savedLastDate = lastDateStr && lastDateStr.length > 0 ? lastDateStr : null;
         setLastActivityDate(savedLastDate);
 
         if (savedStreak > 0 && savedLastDate) {
@@ -594,12 +596,13 @@ export default function App() {
           AsyncStorage.setItem('eco_global_streak', String(globalStreak)),
           AsyncStorage.setItem('eco_last_activity_date', lastActivityDate ?? ''),
           AsyncStorage.setItem('eco_custom_deeds', JSON.stringify(customDeeds)),
+          AsyncStorage.setItem('eco_lifetime_carbon', String(lifetimeCarbonKg)),
         ]);
       } catch (err) {
         console.log('Failed to save to AsyncStorage', err);
       }
     })();
-  }, [habits, xp, notifMap, globalStreak, lastActivityDate, loggedIn]);
+  }, [habits, xp, notifMap, globalStreak, lastActivityDate, loggedIn, lifetimeCarbonKg]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
@@ -607,35 +610,8 @@ export default function App() {
         remoteDataLoaded.current = false; // reset so saves don't fire before load completes
         setFirebaseUser(user);
         setLoggedIn(true);
-        // Load username from Firestore first
-        const snapU = await getDoc(doc(db, 'eco_users', user.uid));
-        if (snapU.exists()) {
-          const dataU = snapU.data() as any;
-          if (dataU.username) {
-            setUsername(dataU.username);
-            await AsyncStorage.setItem('eco_username', dataU.username);
-          }
-          // If no Firestore username, keep whatever AsyncStorage already loaded — don't overwrite
-          // Load leaderboard consent
-          if (typeof dataU.leaderboardConsent === 'boolean') {
-            setLeaderboardConsent(dataU.leaderboardConsent);
-          } else {
-            setLeaderboardConsent(null); // needs to ask
-          }
-        } else {
-          setLeaderboardConsent(null);
-        }
+        // Single Firestore read — handles username, consent, and all user data
         await loadRemoteUserData(user.uid);
-        // Reschedule notifications for all incomplete habits after login
-        if (Notifications) {
-          const stored = await AsyncStorage.getItem('eco_habits');
-          if (stored) {
-            const loadedHabits: Habit[] = JSON.parse(stored);
-            loadedHabits.filter(h => !h.completed).forEach(h => {
-              scheduleForHabit(h.id, h.title, h.time).catch(() => {});
-            });
-          }
-        }
       } else {
         setFirebaseUser(null);
         setLoggedIn(false);
@@ -682,6 +658,8 @@ export default function App() {
           lastActivityDate?: string;
           customDeeds?: Array<{ id: string; label: string; emoji: string }>;
           lifetimeCarbonKg?: number;
+          username?: string;
+          leaderboardConsent?: boolean;
         };
         if (remote.habits) setHabits(remote.habits);
         if (typeof remote.xp === 'number') setXp(remote.xp);
@@ -689,9 +667,26 @@ export default function App() {
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
         if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
         if (typeof remote.lifetimeCarbonKg === 'number') setLifetimeCarbonKg(remote.lifetimeCarbonKg);
+        if (remote.username) {
+          setUsername(remote.username);
+          await AsyncStorage.setItem('eco_username', remote.username);
+        }
+        if (typeof remote.leaderboardConsent === 'boolean') {
+          setLeaderboardConsent(remote.leaderboardConsent);
+        } else {
+          setLeaderboardConsent(null);
+        }
+        // Reschedule notifications for incomplete habits
+        if (Notifications && remote.habits) {
+          remote.habits.filter(h => !h.completed).forEach(h => {
+            const timeOnly = h.time.replace(/^\d{2}-\d{2}\s+/, '');
+            scheduleForHabit(h.id, h.title, timeOnly).catch(() => {});
+          });
+        }
       } else {
-        // New user — create a fresh doc, don't use potentially stale local state
-        await setDoc(userDoc, { habits: [], xp: 0, globalStreak: 0, lastActivityDate: null, customDeeds: [] });
+        // New user — create a fresh doc
+        await setDoc(userDoc, { habits: [], xp: 0, globalStreak: 0, lastActivityDate: null, customDeeds: [], lifetimeCarbonKg: 0 });
+        setLeaderboardConsent(null);
       }
       remoteDataLoaded.current = true;
     } catch (err) {
@@ -957,8 +952,11 @@ export default function App() {
 
   const handleLogout = async () => {
     try { await signOut(auth); } catch {}
-    AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
-    AsyncStorage.removeItem('eco_username').catch(() => {});
+    AsyncStorage.multiRemove([
+      'eco_user_credentials', 'eco_username', 'eco_habits', 'eco_xp',
+      'eco_global_streak', 'eco_last_activity_date', 'eco_custom_deeds',
+      'eco_lifetime_carbon', 'eco_notifs',
+    ]).catch(() => {});
     resetLocalState();
   };
 
