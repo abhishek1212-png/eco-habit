@@ -573,6 +573,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!loggedIn) return; // don't overwrite cached data when logged out
     (async () => {
       try {
         await Promise.all([
@@ -587,11 +588,12 @@ export default function App() {
         console.log('Failed to save to AsyncStorage', err);
       }
     })();
-  }, [habits, xp, notifMap, globalStreak, lastActivityDate]);
+  }, [habits, xp, notifMap, globalStreak, lastActivityDate, loggedIn]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
+        remoteDataLoaded.current = false; // reset so saves don't fire before load completes
         setFirebaseUser(user);
         setLoggedIn(true);
         // Load username from Firestore first
@@ -613,6 +615,16 @@ export default function App() {
           setLeaderboardConsent(null);
         }
         await loadRemoteUserData(user.uid);
+        // Reschedule notifications for all incomplete habits after login
+        if (Notifications) {
+          const stored = await AsyncStorage.getItem('eco_habits');
+          if (stored) {
+            const loadedHabits: Habit[] = JSON.parse(stored);
+            loadedHabits.filter(h => !h.completed).forEach(h => {
+              scheduleForHabit(h.id, h.title, h.time).catch(() => {});
+            });
+          }
+        }
       } else {
         setFirebaseUser(null);
         setLoggedIn(false);
@@ -957,6 +969,20 @@ export default function App() {
       ]
     );
   };
+
+  // ── Auth Loading Screen ───────────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient colors={['#022c22','#064e3b','#065f46']} style={[styles.gradient, {alignItems:'center',justifyContent:'center'}]} start={[0,0]} end={[1,1]}>
+          <StatusBar style="light" />
+          <Text style={{fontSize:64}}>🌿</Text>
+          <Text style={{color:'#4ade80',fontSize:22,fontWeight:'900',marginTop:12}}>Eco Habit</Text>
+          <Text style={{color:'#86efac',fontSize:14,marginTop:8}}>Loading...</Text>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
 
   // ── Login Screen ──────────────────────────────────────────────────────────────
 
