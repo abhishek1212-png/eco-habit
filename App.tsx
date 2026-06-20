@@ -386,6 +386,7 @@ export default function App() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [notifMap, setNotifMap] = useState<Record<string, string>>({});
   const [xp, setXp] = useState(0);
+  const [lifetimeCarbonKg, setLifetimeCarbonKg] = useState(0);
   const [now, setNow] = useState(new Date());
   const confettiRef = useRef<any>(null);
 
@@ -648,7 +649,7 @@ export default function App() {
     if (!firebaseUser) return;
     if (!remoteDataLoaded.current) return; // don't overwrite Firestore before loading real data
     saveRemoteUserData(firebaseUser.uid);
-  }, [habits, xp, globalStreak, lastActivityDate, firebaseUser, customDeeds]);
+  }, [habits, xp, globalStreak, lastActivityDate, firebaseUser, customDeeds, lifetimeCarbonKg]);
 
   // Force-refresh leaderboard every time the user opens that tab so streak is always current
   useEffect(() => {
@@ -680,12 +681,14 @@ export default function App() {
           globalStreak?: number;
           lastActivityDate?: string;
           customDeeds?: Array<{ id: string; label: string; emoji: string }>;
+          lifetimeCarbonKg?: number;
         };
         if (remote.habits) setHabits(remote.habits);
         if (typeof remote.xp === 'number') setXp(remote.xp);
         if (typeof remote.globalStreak === 'number') setGlobalStreak(remote.globalStreak);
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
         if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
+        if (typeof remote.lifetimeCarbonKg === 'number') setLifetimeCarbonKg(remote.lifetimeCarbonKg);
       } else {
         // New user — create a fresh doc, don't use potentially stale local state
         await setDoc(userDoc, { habits: [], xp: 0, globalStreak: 0, lastActivityDate: null, customDeeds: [] });
@@ -702,7 +705,7 @@ export default function App() {
       const userDoc = doc(db, 'eco_users', uid);
       // Only include leaderboard-visible fields if user consented
       const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { globalStreak: 0 };
-      await setDoc(userDoc, { habits, lastActivityDate, customDeeds, ...leaderboardFields }, { merge: true });
+      await setDoc(userDoc, { habits, lastActivityDate, customDeeds, lifetimeCarbonKg, ...leaderboardFields }, { merge: true });
     } catch (err) {
       console.log('Failed to save remote user data', err);
     }
@@ -774,6 +777,11 @@ export default function App() {
     if (willComplete) {
       cancelForHabit(id);
       setXp((v) => Math.max(0, v + XP_PER));
+      // Accumulate lifetime carbon
+      const allDeeds = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
+      const deed = allDeeds.find(d => d.label === h.title);
+      const carbonKg = deed ? (CO2_SAVINGS_G[deed.id] ?? 300) / 1000 : 0;
+      if (carbonKg > 0) setLifetimeCarbonKg(prev => prev + carbonKg);
       if (Platform.OS === 'web') {
         fireWebConfetti();
       } else {
@@ -855,8 +863,7 @@ export default function App() {
         // Save username to Firestore immediately on signup
         await setDoc(doc(db, 'eco_users', uid), { username: uname, habits: [], xp: 0, globalStreak: 0, lastActivityDate: null }, { merge: true });
         setUsername(uname); setLogin({ email, password: '' });
-        setLoggedIn(true); setFirebaseUser(cred.user);
-        await loadRemoteUserData(uid);
+        // onAuthStateChanged will fire and handle the rest
       } catch (e: any) {
         if (e.code === 'auth/email-already-in-use') alert('That email already has an account. Try logging in.');
         else alert('Could not create account. Please try again.');
@@ -865,8 +872,8 @@ export default function App() {
       try {
         const cred = await signInWithEmailAndPassword(auth, email, password);
         await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
-        setLogin({ email, password: '' }); setLoggedIn(true); setFirebaseUser(cred.user);
-        await loadRemoteUserData(cred.user.uid);
+        setLogin({ email, password: '' });
+        // onAuthStateChanged will fire and call loadRemoteUserData — no need to call it here
       } catch (e: any) {
         if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password. Try again.');
         else if (e.code === 'auth/user-not-found') alert('No account with that email. Sign up instead?');
@@ -930,6 +937,7 @@ export default function App() {
   const resetLocalState = () => {
     setHabits([]);
     setXp(0);
+    setLifetimeCarbonKg(0);
     setGlobalStreak(0);
     setLastActivityDate(null);
     setStreakBroken(false);
@@ -1222,7 +1230,7 @@ export default function App() {
           <View style={styles.heroXpBg}>
             <View style={[styles.heroXpFill, { width: `${percentage}%` as any }]} />
           </View>
-          <Text style={styles.heroXpTxt}>{progress}/{required} XP · Level {level + 1} unlocks soon</Text>
+          <Text style={styles.heroXpTxt}>{progress}/{required} XP to Level {level + 1}</Text>
         </LinearGradient>
 
         <LinearGradient colors={['#f3e8ff', '#e0f2fe', '#dcfce7']} style={styles.content} start={[0, 0]} end={[1, 1]}>
@@ -1248,7 +1256,7 @@ export default function App() {
                   key={i}
                   style={[
                     streakDotStyles.dot,
-                    i < globalStreak % 7 || (globalStreak > 0 && globalStreak % 7 === 0)
+                    globalStreak > 0 && (globalStreak % 7 === 0 ? true : i < globalStreak % 7)
                       ? streakDotStyles.dotFilled
                       : streakDotStyles.dotEmpty,
                   ]}
@@ -1264,10 +1272,8 @@ export default function App() {
 
           {/* ── Carbon Impact ── */}
           {(() => {
-            const allDeeds  = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
-            const completed = habits.filter(h => h.completed);
-            const totalKg   = calcCarbonKg(completed, allDeeds);
-            const badge     = totalKg === 0 ? 'Keep going! 💪' : totalKg < 2 ? 'Nice start! 🌱' : totalKg < 10 ? 'Eco Hero! 🌿' : totalKg < 30 ? 'Super Green! 🌳' : 'Earth Champion! 🌍';
+            const totalKg = lifetimeCarbonKg;
+            const badge   = totalKg === 0 ? 'Keep going! 💪' : totalKg < 2 ? 'Nice start! 🌱' : totalKg < 10 ? 'Eco Hero! 🌿' : totalKg < 30 ? 'Super Green! 🌳' : 'Earth Champion! 🌍';
             return (
               <View style={[styles.card, { backgroundColor: '#ecfdf5', borderWidth: 2, borderColor: '#6ee7b7' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -1277,21 +1283,8 @@ export default function App() {
                   </View>
                 </View>
                 <Text style={{ fontSize: 28, fontWeight: '900', color: '#059669', textAlign: 'center' }}>{totalKg.toFixed(2)} kg CO₂</Text>
-                <Text style={{ fontSize: 13, color: '#047857', textAlign: 'center', marginBottom: 8 }}>saved so far 🌱</Text>
-                {totalKg === 0
-                  ? <Text style={{ color: '#9ca3af', textAlign: 'center', fontStyle: 'italic', fontSize: 12 }}>Complete habits to see your impact!</Text>
-                  : DEFAULT_DEED_CATEGORIES.map(cat => {
-                      const kg = calcCarbonKg(completed.filter(h => cat.deeds.map(d => d.label).includes(h.title)), cat.deeds);
-                      if (kg === 0) return null;
-                      return (
-                        <View key={cat.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                          <Text style={{ fontSize: 16, width: 24 }}>{cat.deeds[0]?.emoji}</Text>
-                          <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#374151' }}>{cat.name}</Text>
-                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#059669' }}>{kg.toFixed(2)} kg ✓</Text>
-                        </View>
-                      );
-                    })
-                }
+                <Text style={{ fontSize: 13, color: '#047857', textAlign: 'center', marginBottom: 8 }}>saved lifetime 🌱</Text>
+                {totalKg === 0 && <Text style={{ color: '#9ca3af', textAlign: 'center', fontStyle: 'italic', fontSize: 12 }}>Complete habits to see your impact!</Text>}
               </View>
             );
           })()}
@@ -1424,7 +1417,14 @@ export default function App() {
                   if (!newDeedLabel.trim()) { alert('Enter a deed name'); return; }
                   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
                   const newDeed = { id, label: newDeedLabel.trim(), emoji: newDeedEmoji || '✅' };
-                  setCustomDeeds((d) => [...d, newDeed]);
+                  setCustomDeeds((d) => {
+                    const updated = [...d, newDeed];
+                    // Save immediately to Firestore
+                    if (firebaseUser) {
+                      setDoc(doc(db, 'eco_users', firebaseUser.uid), { customDeeds: updated }, { merge: true }).catch(() => {});
+                    }
+                    return updated;
+                  });
                   setSelectedDeed(id);
                   setNewDeedLabel('');
                   setNewDeedEmoji('');
