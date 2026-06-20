@@ -403,6 +403,7 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const remoteDataLoaded = useRef(false);
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Streak state ──────────────────────────────────────────────────────────────
   const [globalStreak, setGlobalStreak] = useState(0);
@@ -630,8 +631,11 @@ export default function App() {
 
   useEffect(() => {
     if (!firebaseUser) return;
-    if (!remoteDataLoaded.current) return; // don't overwrite Firestore before loading real data
-    saveRemoteUserData(firebaseUser.uid);
+    if (!remoteDataLoaded.current) return;
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    saveDebounceRef.current = setTimeout(() => {
+      saveRemoteUserData(firebaseUser.uid);
+    }, 2000);
   }, [habits, xp, globalStreak, lastActivityDate, firebaseUser, customDeeds, lifetimeCarbonKg]);
 
   // Force-refresh leaderboard every time the user opens that tab so streak is always current
@@ -705,8 +709,8 @@ export default function App() {
   const saveRemoteUserData = async (uid: string) => {
     try {
       const userDoc = doc(db, 'eco_users', uid);
-      // Only include leaderboard-visible fields if user consented
-      const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { globalStreak: 0 };
+      // Always save xp and globalStreak — only expose to leaderboard if consented
+      const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { xp, globalStreak };
       await setDoc(userDoc, { habits, lastActivityDate, customDeeds, lifetimeCarbonKg, ...leaderboardFields }, { merge: true });
     } catch (err) {
       console.log('Failed to save remote user data', err);
@@ -985,8 +989,11 @@ export default function App() {
                 return;
               }
             }
-            await AsyncStorage.removeItem('eco_user_credentials');
-            await AsyncStorage.removeItem('eco_username');
+            await AsyncStorage.multiRemove([
+              'eco_user_credentials', 'eco_username', 'eco_habits', 'eco_xp',
+              'eco_global_streak', 'eco_last_activity_date', 'eco_custom_deeds',
+              'eco_lifetime_carbon', 'eco_notifs',
+            ]);
             resetLocalState();
             Alert.alert('Account Deleted', 'Your account and all your data have been permanently deleted.');
           },
@@ -1492,10 +1499,10 @@ export default function App() {
                 keyExtractor={(i) => i.id}
                 scrollEnabled={false}
                 renderItem={({ item }) => (
-                  <View style={[styles.row, item.completed && styles.rowDone]}>
+                  <View style={styles.row}>
                     <View style={styles.rowText}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <Text style={[styles.title, item.completed && styles.titleDone]}>{item.title}</Text>
+                        <Text style={styles.title}>{item.title}</Text>
                         {(item.streak ?? 0) > 0 && (
                           <View style={styles.streakBadge}>
                             <Text style={styles.streakText}>🔥 {item.streak}</Text>
@@ -1505,8 +1512,8 @@ export default function App() {
                       <Text style={styles.meta}>⏱ {item.time}</Text>
                     </View>
                     <View style={styles.actions}>
-                      <TouchableOpacity style={[styles.smallButton, item.completed && styles.smallButtonDone]} onPress={() => toggle(item.id)}>
-                        <Text style={[styles.smallText, item.completed && styles.smallTextDone]}>{item.completed ? 'Undo' : 'Done ✓'}</Text>
+                      <TouchableOpacity style={styles.smallButton} onPress={() => toggle(item.id)}>
+                        <Text style={styles.smallText}>Done ✓</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.smallButton, styles.delete]} onPress={() => remove(item.id)}>
                         <Text style={styles.smallText}>✕</Text>
@@ -1517,6 +1524,33 @@ export default function App() {
               />
             )}
           </View>
+
+          {/* ── Completed Today ── */}
+          {habits.filter(h => h.completed).length > 0 && (
+            <View style={[styles.card, { backgroundColor: '#dcfce7' }]}>
+              <Text style={styles.section}>✅ Completed Today</Text>
+              <FlatList
+                data={habits.filter(h => h.completed)}
+                keyExtractor={(i) => i.id}
+                scrollEnabled={false}
+                renderItem={({ item }) => (
+                  <View style={[styles.row, styles.rowDone]}>
+                    <View style={styles.rowText}>
+                      <Text style={[styles.title, styles.titleDone]}>{item.title}</Text>
+                      {(item.streak ?? 0) > 0 && (
+                        <View style={styles.streakBadge}>
+                          <Text style={styles.streakText}>🔥 {item.streak}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <TouchableOpacity style={[styles.smallButton, styles.smallButtonDone]} onPress={() => toggle(item.id)}>
+                      <Text style={[styles.smallText, styles.smallTextDone]}>Undo</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            </View>
+          )}
 
           <View style={styles.footer}>
             <Button title="Clear completed" onPress={clearCompleted} />
