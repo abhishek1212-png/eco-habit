@@ -783,7 +783,7 @@ export default function App() {
       setHabits((prev) =>
         prev.map((hh) =>
           hh.id === id
-            ? { ...hh, completed: false, streak: Math.max(0, (hh.streak || 1) - 1) }
+            ? { ...hh, completed: false }
             : hh,
         ),
       );
