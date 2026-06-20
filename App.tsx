@@ -630,7 +630,7 @@ export default function App() {
 
   // Force-refresh leaderboard every time the user opens that tab so streak is always current
   useEffect(() => {
-    if (activeTab === 'leaderboard') { lbLastFetch.current = 0; fetchLeaderboard(true); }
+    if (activeTab === 'leaderboard') fetchLeaderboard(true, username, xp, globalStreak);
   }, [activeTab]);
 
   useEffect(() => {
@@ -661,9 +661,9 @@ export default function App() {
           customDeeds?: Array<{ id: string; label: string; emoji: string }>;
         };
         if (remote.habits) setHabits(remote.habits);
-        if (typeof remote.xp === 'number') setXp((local) => Math.max(local, remote.xp!));
+        if (typeof remote.xp === 'number') setXp(remote.xp);
         if (remote.notifMap) setNotifMap(remote.notifMap);
-        if (typeof remote.globalStreak === 'number') setGlobalStreak((local) => Math.max(local, remote.globalStreak!));
+        if (typeof remote.globalStreak === 'number') setGlobalStreak(remote.globalStreak);
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
         if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
       } else {
@@ -863,7 +863,7 @@ export default function App() {
 
   const resetRecovery = () => { setForgotMode(false); setForgotEmail(''); setForgotSent(false); };
 
-  const fetchLeaderboard = async (force = false) => {
+  const fetchLeaderboard = async (force = false, currentUsername = username, currentXp = xp, currentStreak = globalStreak) => {
     setLbLoading(true);
     try {
       const snap = await getDocsFromServer(collection(db, 'eco_users'));
@@ -882,13 +882,13 @@ export default function App() {
           seen.add(u.username);
           return true;
         });
-      // Always use local state for the current user so streak/XP is never stale
-      if (username) {
+      // Always use fresh local state for current user
+      if (currentUsername) {
         users = users.map(u => {
-          if (u.username !== username) return u;
+          if (u.username !== currentUsername) return u;
           let lvl = 1, acc = 0;
-          while (true) { const n = 100+(lvl-1)*20; if (xp<acc+n) break; acc+=n; lvl++; }
-          return { ...u, xp, streak: globalStreak, level: lvl };
+          while (true) { const n = 100+(lvl-1)*20; if (currentXp<acc+n) break; acc+=n; lvl++; }
+          return { ...u, xp: currentXp, streak: currentStreak, level: lvl };
         });
       }
       const ranked = users
@@ -901,17 +901,31 @@ export default function App() {
   };
 
 
-  const handleLogout = async () => {
-    try { await signOut(auth); } catch {}
-    AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
-    AsyncStorage.removeItem('eco_username').catch(() => {});
-    setLogin({ email: '', password: '' });
+  const resetLocalState = () => {
+    setHabits([]);
+    setXp(0);
+    setGlobalStreak(0);
+    setLastActivityDate(null);
+    setStreakBroken(false);
+    setCustomDeeds([]);
+    setNotifMap({});
+    setLeaderboard([]);
     setUsername('');
+    setLogin({ email: '', password: '' });
     setIsSignup(false);
     setSignupUsername('');
     setLoggedIn(false);
     setFirebaseUser(null);
     setActiveTab('home');
+    setLeaderboardConsent(null);
+    remoteDataLoaded.current = false;
+  };
+
+  const handleLogout = async () => {
+    try { await signOut(auth); } catch {}
+    AsyncStorage.removeItem('eco_user_credentials').catch(() => {});
+    AsyncStorage.removeItem('eco_username').catch(() => {});
+    resetLocalState();
   };
 
   const handleDeleteAccount = () => {
@@ -930,19 +944,13 @@ export default function App() {
               }
             } catch (e: any) {
               if (e?.code === 'auth/requires-recent-login') {
-                Alert.alert('Please sign out and sign back in, then try deleting your account again.');
+                Alert.alert('Session Expired', 'Please sign out and sign back in, then try deleting your account again.');
                 return;
               }
             }
             await AsyncStorage.removeItem('eco_user_credentials');
             await AsyncStorage.removeItem('eco_username');
-            setLogin({ email: '', password: '' });
-            setUsername('');
-            setIsSignup(false);
-            setSignupUsername('');
-            setLoggedIn(false);
-            setFirebaseUser(null);
-            setActiveTab('home');
+            resetLocalState();
             Alert.alert('Account Deleted', 'Your account and all your data have been permanently deleted.');
           },
         },
@@ -1110,7 +1118,7 @@ export default function App() {
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>← Back</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff' }}>🏆 Leaderboard</Text>
-              <TouchableOpacity onPress={() => fetchLeaderboard(true)} style={{ backgroundColor: '#1e5c3e', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+              <TouchableOpacity onPress={() => fetchLeaderboard(true, username, xp, globalStreak)} style={{ backgroundColor: '#1e5c3e', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
                 <Text style={{ color: '#4ade80', fontWeight: '700', fontSize: 12 }}>↻ Refresh</Text>
               </TouchableOpacity>
             </View>
@@ -1144,7 +1152,7 @@ export default function App() {
           <View style={styles.heroTop}>
             <Text style={styles.heroLogo}>🌿 Eco Habit</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity onPress={() => { setActiveTab('leaderboard'); fetchLeaderboard(true); }} style={{ backgroundColor: '#6366f1', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+              <TouchableOpacity onPress={() => { setActiveTab('leaderboard'); fetchLeaderboard(true, username, xp, globalStreak); }} style={{ backgroundColor: '#6366f1', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
                 <Text style={styles.heroSignOutTxt}>🏆 Leaderboard</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={styles.heroSignOut}>
