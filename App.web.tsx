@@ -211,6 +211,7 @@ export default function App() {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [needsUsername, setNeedsUsername] = useState(false);
   const [pendingUsername, setPendingUsername] = useState('');
@@ -524,34 +525,39 @@ export default function App() {
     if (!email || !password) { alert('Enter your email and password'); return; }
     if (!EMAIL_PATTERN.test(email)) { alert('Enter a valid email address'); return; }
 
-    if (isSignup) {
-      const uname = signupUsername.trim().toLowerCase();
-      if (!uname) { alert('Pick a username'); return; }
-      if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore only'); return; }
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const uid  = cred.user.uid;
-        await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
-        await AsyncStorage.setItem('eco_username', uname);
-        // Save username to Firestore immediately on signup
-        await setDoc(doc(db,'eco_users',uid), { username: uname, habits: [], xp: 0, globalStreak: 0, lastActivityDate: null }, { merge: true });
-        setUsername(uname); setLogin({ email, password: '' }); setLoggedIn(true); setFirebaseUser(cred.user);
-        await loadRemoteUserData(uid);
-      } catch (e: any) {
-        if (e.code === 'auth/email-already-in-use') alert('That email already has an account. Try logging in.');
-        else alert('Could not create account. Please try again.');
+    setLoginLoading(true);
+    try {
+      if (isSignup) {
+        const uname = signupUsername.trim().toLowerCase();
+        if (!uname) { alert('Pick a username'); setLoginLoading(false); return; }
+        if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore only'); setLoginLoading(false); return; }
+        if (password.length < 6) { alert('Password must be at least 6 characters'); setLoginLoading(false); return; }
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          const uid  = cred.user.uid;
+          await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
+          await AsyncStorage.setItem('eco_username', uname);
+          await setDoc(doc(db,'eco_users',uid), { username: uname, habits: [], xp: 0, globalStreak: 0, lastActivityDate: null }, { merge: true });
+          setUsername(uname); setLogin({ email, password: '' }); setLoggedIn(true); setFirebaseUser(cred.user);
+          await loadRemoteUserData(uid);
+        } catch (e: any) {
+          if (e.code === 'auth/email-already-in-use') alert('That email already has an account. Try logging in.');
+          else alert('Could not create account. Please try again.');
+        }
+      } else {
+        try {
+          const cred = await signInWithEmailAndPassword(auth, email, password);
+          await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
+          setLogin({ email, password: '' }); setLoggedIn(true); setFirebaseUser(cred.user);
+          await loadRemoteUserData(cred.user.uid);
+        } catch (e: any) {
+          if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password. Try again.');
+          else if (e.code === 'auth/user-not-found') alert('No account with that email. Sign up instead?');
+          else alert('Could not sign in. Check your connection.');
+        }
       }
-    } else {
-      try {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
-        setLogin({ email, password: '' }); setLoggedIn(true); setFirebaseUser(cred.user);
-        await loadRemoteUserData(cred.user.uid);
-      } catch (e: any) {
-        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') alert('Wrong password. Try again.');
-        else if (e.code === 'auth/user-not-found') alert('No account with that email. Sign up instead?');
-        else alert('Could not sign in. Check your connection.');
-      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -574,6 +580,7 @@ export default function App() {
     AsyncStorage.removeItem('eco_user_credentials').catch(()=>{});
     AsyncStorage.removeItem('eco_username').catch(()=>{});
     setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
+    setShowPassword(false); setForgotMode(false); setForgotEmail(''); setForgotSent(false);
     setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
 
@@ -588,12 +595,15 @@ export default function App() {
     } catch (e: any) {
       if (e?.code === 'auth/requires-recent-login') {
         alert('Please sign out and sign back in, then try deleting your account again.');
-        return;
+      } else {
+        alert('Could not delete account. Please try again or contact support.');
       }
+      return;
     }
     await AsyncStorage.removeItem('eco_user_credentials');
     await AsyncStorage.removeItem('eco_username');
     setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
+    setShowPassword(false); setForgotMode(false); setForgotEmail(''); setForgotSent(false);
     setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
 
@@ -704,8 +714,8 @@ export default function App() {
                 </View>
               ) : (
                 <>
-                  <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:16,alignItems:'center',marginTop:4}} onPress={handleLogin}>
-                    <Text style={{color:'#fff',fontWeight:'900',fontSize:17}}>Let's Go! 🌿</Text>
+                  <TouchableOpacity style={{backgroundColor:'#22c55e',borderRadius:14,paddingVertical:16,alignItems:'center',marginTop:4,opacity:loginLoading?0.6:1}} onPress={handleLogin} disabled={loginLoading}>
+                    <Text style={{color:'#fff',fontWeight:'900',fontSize:17}}>{loginLoading?(isSignup?'Creating account…':'Signing in…'):"Let's Go! 🌿"}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={()=>setForgotMode(true)} style={{alignSelf:'center',marginTop:12,padding:8}}>
                     <Text style={{color:'#86efac',fontSize:13}}>Forgot password?</Text>
