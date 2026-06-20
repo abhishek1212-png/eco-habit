@@ -613,7 +613,7 @@ export default function App() {
       <SafeAreaView style={{flex:1,backgroundColor:'#0d3b2e',minHeight:'100vh' as any}}>
         <LinearGradient colors={['#0d3b2e','#1a5c42','#0d3b2e']} style={{flex:1,minHeight:'100vh' as any}} start={[0,0]} end={[1,1]}>
           <StatusBar style="light"/>
-          <View style={{flex:1,minHeight:'100vh' as any,alignItems:'center',justifyContent:'center',padding:28,gap:32}}>
+          <ScrollView contentContainerStyle={{flexGrow:1,alignItems:'center',justifyContent:'center',padding:28,gap:32}} keyboardShouldPersistTaps="handled">
             {/* Animated Earth */}
             <Animated.View style={{alignItems:'center',transform:[{translateY:Animated.add(earthY,earthBob)},{scale:earthScale}]}}>
               <View style={{width:120,height:120,borderRadius:60,backgroundColor:'#1565c0',overflow:'hidden',alignItems:'center',justifyContent:'center'}}>
@@ -713,7 +713,7 @@ export default function App() {
                 </>
               )}
             </Animated.View>
-          </View>
+          </ScrollView>
         </LinearGradient>
       </SafeAreaView>
     );
