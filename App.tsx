@@ -461,15 +461,24 @@ export default function App() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
-  const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
+  const formatDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const todayStr = () => formatDateStr(new Date());
 
   const yesterdayStr = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return formatDateStr(d);
+  };
+
+  // Returns both today and yesterday from the same moment to avoid midnight race
+  const todayAndYesterday = () => {
+    const d = new Date();
+    const today = formatDateStr(d);
+    d.setDate(d.getDate() - 1);
+    const yesterday = formatDateStr(d);
+    return { today, yesterday };
   };
 
   const fmtTime = (d: Date, tz: string) =>
@@ -509,8 +518,7 @@ export default function App() {
 
   // Auto-reset completed habits each new day + check streak break
   useEffect(() => {
-    const today = todayStr();
-    const yesterday = yesterdayStr();
+    const { today, yesterday } = todayAndYesterday();
     setHabits((prev) =>
       prev.map((h) =>
         h.completed && h.lastCompletedDate !== today
@@ -564,8 +572,7 @@ export default function App() {
         setLastActivityDate(savedLastDate);
 
         if (savedStreak > 0 && savedLastDate) {
-          const yesterday = yesterdayStr();
-          const today = todayStr();
+          const { today, yesterday } = todayAndYesterday();
           if (savedLastDate < yesterday) {
             // Missed a day — streak broken
             setGlobalStreak(0);
@@ -784,8 +791,7 @@ export default function App() {
       }
 
       // Per-habit streak — only increment once per day
-      const today = todayStr();
-      const yest = yesterdayStr();
+      const { today, yesterday: yest } = todayAndYesterday();
       const newHabitStreak =
         h.lastCompletedDate === today
           ? (h.streak || 0) // already completed today, don't increment again
@@ -835,9 +841,7 @@ export default function App() {
   };
 
   const clearCompleted = () => {
-    const completed = habits.filter((h) => h.completed);
-    completed.forEach((h) => cancelForHabit(h.id));
-    setHabits((s) => s.filter((h) => !h.completed));
+    setHabits((s) => s.map((h) => h.completed ? { ...h, completed: false } : h));
   };
 
   const handleLogin = async () => {
@@ -850,13 +854,14 @@ export default function App() {
       const uname = signupUsername.trim().toLowerCase();
       if (!uname) { alert('Pick a username'); return; }
       if (!/^[a-z0-9_]{3,20}$/.test(uname)) { alert('Username: 3–20 chars, letters/numbers/underscore'); return; }
+      if (password.length < 6) { alert('Password must be at least 6 characters'); return; }
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const uid  = cred.user.uid;
         await AsyncStorage.setItem('eco_user_credentials', JSON.stringify({ email }));
         await AsyncStorage.setItem('eco_username', uname);
         // Save username to Firestore immediately on signup
-        await setDoc(doc(db, 'eco_users', uid), { username: uname, habits: [], xp: 0, globalStreak: 0, lastActivityDate: null }, { merge: true });
+        await setDoc(doc(db, 'eco_users', uid), { username: uname, habits: [], xp: 0, globalStreak: 0, lastActivityDate: null, lifetimeCarbonKg: 0, customDeeds: [] }, { merge: true });
         setUsername(uname); setLogin({ email, password: '' });
         // onAuthStateChanged will fire and handle the rest
       } catch (e: any) {
