@@ -24,7 +24,6 @@ import {
   TouchableOpacity,
   View,
   Platform,
-  useWindowDimensions,
 } from 'react-native';
 import { auth, db } from './firebase';
 import {
@@ -51,6 +50,7 @@ type Credentials = { email: string; password?: string };
 
 const XP_PER = 10;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 // ─── Carbon savings per deed (grams CO₂, EPA/IPCC data) ──────────────────────
 const CO2_SAVINGS_G: Record<string, number> = {
@@ -417,9 +417,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'home'|'leaderboard'>('home');
   const [leaderboard, setLeaderboard] = useState<{rank:number;username:string;xp:number;streak:number;level:number}[]>([]);
   const [lbLoading, setLbLoading] = useState(false);
-  const lbLastFetch = useRef<number>(0);
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
 
   // ── Derived ───────────────────────────────────────────────────────────────────
   const upcoming = useMemo(() => habits.filter((h) => !h.completed), [habits]);
@@ -456,7 +453,7 @@ export default function App() {
   const { lvl: level, progress, required } = calcLevel(xp);
   const percentage = Math.floor((progress / required) * 100);
 
-  const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const localTz = LOCAL_TZ;
   
   
 
@@ -636,6 +633,9 @@ export default function App() {
     saveDebounceRef.current = setTimeout(() => {
       saveRemoteUserData(firebaseUser.uid);
     }, 2000);
+    return () => {
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    };
   }, [habits, xp, globalStreak, lastActivityDate, firebaseUser, customDeeds, lifetimeCarbonKg]);
 
   // Force-refresh leaderboard every time the user opens that tab so streak is always current
@@ -782,7 +782,8 @@ export default function App() {
 
     if (willComplete) {
       cancelForHabit(id);
-      setXp((v) => Math.max(0, v + XP_PER));
+      let newXpValue = 0;
+      setXp((v) => { newXpValue = v + XP_PER; return newXpValue; });
       // Accumulate lifetime carbon
       const allDeeds = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
       const deed = allDeeds.find(d => d.label === h.title);
@@ -814,7 +815,7 @@ export default function App() {
       // Global daily streak
       if (lastActivityDate !== today) {
         const newGlobal = lastActivityDate === yest ? globalStreak + 1 : 1;
-        const newXp = xp + XP_PER; // XP_PER already added via setXp above
+        const newXp = newXpValue; // captured from setXp updater above
         setGlobalStreak(newGlobal);
         setLastActivityDate(today);
         setStreakBroken(false);
