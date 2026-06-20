@@ -450,10 +450,9 @@ export default function App() {
   const treeStages = ['Seedling', 'Growing Sapling', 'Branching Out', 'Leafy Grove', 'Eco Oak'];
   const treeStage = treeStages[Math.min(treeStages.length - 1, Math.floor(treeCompletion * treeStages.length))];
 
-  const level = Math.floor(xp / 100) + 1;
-  const progress = xp % 100;
-  const required = 100;
-  const percentage = progress;
+  const calcLevel = (totalXp: number) => { let lvl = 1, acc = 0; while (true) { const n = 100+(lvl-1)*20; if (totalXp<acc+n) return { lvl, progress: totalXp-acc, required: n }; acc+=n; lvl++; } return { lvl: 1, progress: 0, required: 100 }; };
+  const { lvl: level, progress, required } = calcLevel(xp);
+  const percentage = Math.floor((progress / required) * 100);
 
   const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   
@@ -506,6 +505,18 @@ export default function App() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Auto-reset completed habits each new day
+  useEffect(() => {
+    const today = todayStr();
+    setHabits((prev) =>
+      prev.map((h) =>
+        h.completed && h.lastCompletedDate !== today
+          ? { ...h, completed: false }
+          : h,
+      ),
+    );
+  }, [now.toDateString()]);
 
   useEffect(() => {
     (async () => {
@@ -669,7 +680,7 @@ export default function App() {
     try {
       const userDoc = doc(db, 'eco_users', uid);
       // Only include leaderboard-visible fields if user consented
-      const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { username: null, globalStreak: 0 };
+      const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { globalStreak: 0 };
       await setDoc(userDoc, { habits, notifMap, lastActivityDate, customDeeds, ...leaderboardFields }, { merge: true });
     } catch (err) {
       console.log('Failed to save remote user data', err);
@@ -779,7 +790,6 @@ export default function App() {
       }
     } else {
       scheduleForHabit(id, h.title, h.time);
-      setXp((v) => Math.max(0, v - XP_PER));
       setHabits((prev) =>
         prev.map((hh) =>
           hh.id === id
