@@ -780,13 +780,15 @@ export default function App() {
         confettiRef.current?.start();
       }
 
-      // Per-habit streak
+      // Per-habit streak — only increment once per day
       const today = todayStr();
       const yest = yesterdayStr();
       const newHabitStreak =
-        h.lastCompletedDate === yest || h.lastCompletedDate === today
-          ? (h.streak || 0) + 1
-          : 1;
+        h.lastCompletedDate === today
+          ? (h.streak || 0) // already completed today, don't increment again
+          : h.lastCompletedDate === yest
+            ? (h.streak || 0) + 1
+            : 1;
 
       setHabits((prev) =>
         prev.map((hh) =>
@@ -799,18 +801,21 @@ export default function App() {
       // Global daily streak
       if (lastActivityDate !== today) {
         const newGlobal = lastActivityDate === yest ? globalStreak + 1 : 1;
-        const newXp = xp + XP_PER;
+        const newXp = xp + XP_PER; // XP_PER already added via setXp above
         setGlobalStreak(newGlobal);
         setLastActivityDate(today);
         setStreakBroken(false);
-        // Save immediately so leaderboard is always up to date
+        // Save immediately so leaderboard is always up to date — fix 1: use computed newXp
         if (firebaseUser) {
           const userDoc = doc(db, 'eco_users', firebaseUser.uid);
-          setDoc(userDoc, { globalStreak: newGlobal, lastActivityDate: today, xp: newXp, username }, { merge: true }).catch(() => {});
+          const lbFields = leaderboardConsent ? { username, globalStreak: newGlobal, xp: newXp } : { globalStreak: newGlobal };
+          setDoc(userDoc, { lastActivityDate: today, ...lbFields }, { merge: true }).catch(() => {});
         }
       }
     } else {
-      scheduleForHabit(id, h.title, h.time);
+      // Strip date prefix (e.g. "06-21 08:00 AM" → "08:00 AM") before rescheduling
+      const timeOnly = h.time.replace(/^\d{2}-\d{2}\s+/, '');
+      scheduleForHabit(id, h.title, timeOnly);
       setHabits((prev) =>
         prev.map((hh) =>
           hh.id === id
