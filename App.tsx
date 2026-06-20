@@ -506,9 +506,10 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Auto-reset completed habits each new day
+  // Auto-reset completed habits each new day + check streak break
   useEffect(() => {
     const today = todayStr();
+    const yesterday = yesterdayStr();
     setHabits((prev) =>
       prev.map((h) =>
         h.completed && h.lastCompletedDate !== today
@@ -516,6 +517,15 @@ export default function App() {
           : h,
       ),
     );
+    // Break streak if last activity wasn't yesterday or today
+    setGlobalStreak((prev) => {
+      if (prev > 0 && lastActivityDate && lastActivityDate < yesterday) {
+        setStreakBroken(true);
+        AsyncStorage.setItem('eco_global_streak', '0').catch(() => {});
+        return 0;
+      }
+      return prev;
+    });
   }, [now.toDateString()]);
 
   useEffect(() => {
@@ -638,7 +648,7 @@ export default function App() {
     if (!firebaseUser) return;
     if (!remoteDataLoaded.current) return; // don't overwrite Firestore before loading real data
     saveRemoteUserData(firebaseUser.uid);
-  }, [habits, xp, notifMap, globalStreak, lastActivityDate, firebaseUser, customDeeds]);
+  }, [habits, xp, globalStreak, lastActivityDate, firebaseUser, customDeeds]);
 
   // Force-refresh leaderboard every time the user opens that tab so streak is always current
   useEffect(() => {
@@ -667,19 +677,18 @@ export default function App() {
         const remote = snapshot.data() as {
           habits?: Habit[];
           xp?: number;
-          notifMap?: Record<string, string>;
           globalStreak?: number;
           lastActivityDate?: string;
           customDeeds?: Array<{ id: string; label: string; emoji: string }>;
         };
         if (remote.habits) setHabits(remote.habits);
         if (typeof remote.xp === 'number') setXp(remote.xp);
-        if (remote.notifMap) setNotifMap(remote.notifMap);
         if (typeof remote.globalStreak === 'number') setGlobalStreak(remote.globalStreak);
         if (remote.lastActivityDate) setLastActivityDate(remote.lastActivityDate);
         if (remote.customDeeds) setCustomDeeds(remote.customDeeds);
       } else {
-        await setDoc(userDoc, { habits, xp, notifMap, globalStreak, lastActivityDate });
+        // New user — create a fresh doc, don't use potentially stale local state
+        await setDoc(userDoc, { habits: [], xp: 0, globalStreak: 0, lastActivityDate: null, customDeeds: [] });
       }
       remoteDataLoaded.current = true;
     } catch (err) {
@@ -693,7 +702,7 @@ export default function App() {
       const userDoc = doc(db, 'eco_users', uid);
       // Only include leaderboard-visible fields if user consented
       const leaderboardFields = leaderboardConsent ? { username, globalStreak, xp } : { globalStreak: 0 };
-      await setDoc(userDoc, { habits, notifMap, lastActivityDate, customDeeds, ...leaderboardFields }, { merge: true });
+      await setDoc(userDoc, { habits, lastActivityDate, customDeeds, ...leaderboardFields }, { merge: true });
     } catch (err) {
       console.log('Failed to save remote user data', err);
     }
