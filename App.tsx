@@ -854,13 +854,9 @@ export default function App() {
   const resetRecovery = () => { setForgotMode(false); setForgotEmail(''); setForgotSent(false); };
 
   const fetchLeaderboard = async (force = false) => {
-    const now = Date.now();
-    if (!force && leaderboard.length > 0 && now - lbLastFetch.current < 60_000) return;
     setLbLoading(true);
     try {
-      const snap = force
-        ? await getDocsFromServer(collection(db, 'eco_users'))
-        : await getDocs(collection(db, 'eco_users'));
+      const snap = await getDocsFromServer(collection(db, 'eco_users'));
       const seen = new Set<string>();
       let users = snap.docs
         .map(d => {
@@ -890,7 +886,6 @@ export default function App() {
         .slice(0, 50)
         .map((u, i) => ({ ...u, rank: i+1 }));
       setLeaderboard(ranked);
-      lbLastFetch.current = Date.now();
     } catch {}
     setLbLoading(false);
   };
