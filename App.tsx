@@ -12,7 +12,6 @@ try {
 import {
   Alert,
   Animated,
-  Button,
   Easing,
   FlatList,
   KeyboardAvoidingView,
@@ -35,7 +34,7 @@ import {
   deleteUser,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocsFromServer } from 'firebase/firestore';
 
 type Habit = {
   id: string;
@@ -454,10 +453,6 @@ export default function App() {
   const { lvl: level, progress, required } = calcLevel(xp);
   const percentage = Math.floor((progress / required) * 100);
 
-  const localTz = LOCAL_TZ;
-  
-  
-
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
   const formatDateStr = (d: Date) =>
@@ -783,13 +778,18 @@ export default function App() {
 
     if (willComplete) {
       cancelForHabit(id);
+      const { today: todayCheck } = todayAndYesterday();
+      const alreadyDoneToday = h.lastCompletedDate === todayCheck;
       let newXpValue = 0;
-      setXp((v) => { newXpValue = v + XP_PER; return newXpValue; });
-      // Accumulate lifetime carbon
-      const allDeeds = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
-      const deed = allDeeds.find(d => d.label === h.title);
-      const carbonKg = deed ? (CO2_SAVINGS_G[deed.id] ?? 300) / 1000 : 0;
-      if (carbonKg > 0) setLifetimeCarbonKg(prev => prev + carbonKg);
+      // Only award XP and carbon if not already completed today (prevents farming)
+      if (!alreadyDoneToday) {
+        setXp((v) => { newXpValue = v + XP_PER; return newXpValue; });
+        // Accumulate lifetime carbon
+        const allDeeds = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
+        const deed = allDeeds.find(d => d.label === h.title);
+        const carbonKg = deed ? (CO2_SAVINGS_G[deed.id] ?? 300) / 1000 : 0;
+        if (carbonKg > 0) setLifetimeCarbonKg(prev => prev + carbonKg);
+      }
       if (Platform.OS === 'web') {
         fireWebConfetti();
       } else {
@@ -966,6 +966,7 @@ export default function App() {
     setForgotMode(false);
     setForgotEmail('');
     setForgotSent(false);
+    setLoginLoading(false);
     setLoggedIn(false);
     setFirebaseUser(null);
     setActiveTab('home');

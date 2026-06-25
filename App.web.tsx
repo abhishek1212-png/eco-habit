@@ -39,7 +39,7 @@ import {
   type User,
 } from 'firebase/auth';
 // eco_usernames/{username} → { uid, email }  (reverse-lookup for login)
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, getDocsFromServer, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, getDocsFromServer } from 'firebase/firestore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Habit = {
@@ -497,9 +497,14 @@ export default function App() {
     const willComplete = !h.completed;
     if (willComplete) {
       fireWebConfetti();
-      setXp(v=>Math.max(0,v+XP_PER));
       const today = todayStr(); const yest = yesterdayStr();
-      const newStreak = h.lastCompletedDate===yest||h.lastCompletedDate===today ? (h.streak||0)+1 : 1;
+      const alreadyDoneToday = h.lastCompletedDate === today;
+      // Only award XP if not already completed today
+      if (!alreadyDoneToday) setXp(v=>Math.max(0,v+XP_PER));
+      // Only increment streak if not already counted today
+      const newStreak = alreadyDoneToday
+        ? (h.streak || 0)
+        : h.lastCompletedDate===yest ? (h.streak||0)+1 : 1;
       setHabits(prev=>prev.map(hh=>hh.id===id?{...hh,completed:true,streak:newStreak,lastCompletedDate:today}:hh));
       if (lastActivityDate!==today) {
         const newGlobal = lastActivityDate===yest ? globalStreak+1 : 1;
@@ -581,6 +586,7 @@ export default function App() {
     AsyncStorage.removeItem('eco_username').catch(()=>{});
     setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
     setShowPassword(false); setForgotMode(false); setForgotEmail(''); setForgotSent(false);
+    setLoginLoading(false);
     setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
 
@@ -604,6 +610,7 @@ export default function App() {
     await AsyncStorage.removeItem('eco_username');
     setLogin({ email: '', password: '' }); setUsername(''); setLoggedIn(false); setFirebaseUser(null);
     setShowPassword(false); setForgotMode(false); setForgotEmail(''); setForgotSent(false);
+    setLoginLoading(false);
     setIsSignup(false); setSignupUsername(''); setActiveTab('home');
   };
 
