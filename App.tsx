@@ -458,14 +458,6 @@ export default function App() {
   const formatDateStr = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-  const todayStr = () => formatDateStr(new Date());
-
-  const yesterdayStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return formatDateStr(d);
-  };
-
   // Returns both today and yesterday from the same moment to avoid midnight race
   const todayAndYesterday = () => {
     const d = new Date();
@@ -474,11 +466,6 @@ export default function App() {
     const yesterday = formatDateStr(d);
     return { today, yesterday };
   };
-
-  const fmtTime = (d: Date, tz: string) =>
-    new Intl.DateTimeFormat(undefined, {
-      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz,
-    }).format(d);
 
   const parseTimeToNextDate = (timeWithAmpm: string, dateStr?: string) => {
     const m = timeWithAmpm.trim().match(/(\d{1,2}):(\d{2})\s*([AaPp][Mm])/);
@@ -506,7 +493,7 @@ export default function App() {
   // ── Effects ───────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const id = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(id);
   }, []);
 
@@ -778,8 +765,8 @@ export default function App() {
 
     if (willComplete) {
       cancelForHabit(id);
-      const { today: todayCheck } = todayAndYesterday();
-      const alreadyDoneToday = h.lastCompletedDate === todayCheck;
+      const { today, yesterday: yest } = todayAndYesterday();
+      const alreadyDoneToday = h.lastCompletedDate === today;
       let newXpValue = 0;
       // Only award XP and carbon if not already completed today (prevents farming)
       if (!alreadyDoneToday) {
@@ -797,7 +784,6 @@ export default function App() {
       }
 
       // Per-habit streak — only increment once per day
-      const { today, yesterday: yest } = todayAndYesterday();
       const newHabitStreak =
         h.lastCompletedDate === today
           ? (h.streak || 0) // already completed today, don't increment again
