@@ -49,7 +49,6 @@ type Credentials = { email: string; password?: string };
 
 const XP_PER = 10;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 // ─── Carbon savings per deed (grams CO₂, EPA/IPCC data) ──────────────────────
 const CO2_SAVINGS_G: Record<string, number> = {
@@ -61,12 +60,6 @@ const CO2_SAVINGS_G: Record<string, number> = {
   'eco-shopping': 200, 'compost': 300, 'sustainable': 500,
 };
 
-function calcCarbonKg(completedHabits: { title: string }[], allDeeds: { id: string; label: string }[]): number {
-  return completedHabits.reduce((sum, h) => {
-    const deed = allDeeds.find(d => d.label === h.title);
-    return sum + (deed ? (CO2_SAVINGS_G[deed.id] ?? 300) : 0);
-  }, 0) / 1000;
-}
 
 // ─── Streak Tree Component ────────────────────────────────────────────────────
 
@@ -780,8 +773,8 @@ export default function App() {
       // Only award XP and carbon if not already completed today (prevents farming)
       if (!alreadyDoneToday) {
         setXp((v) => { newXpValue = v + XP_PER; return newXpValue; });
-        // Accumulate lifetime carbon
-        const allDeeds = DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds);
+        // Accumulate lifetime carbon (include custom deeds so they get default 300g)
+        const allDeeds = [...DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds), ...customDeeds];
         const deed = allDeeds.find(d => d.label === h.title);
         const carbonKg = deed ? (CO2_SAVINGS_G[deed.id] ?? 300) / 1000 : 0;
         if (carbonKg > 0) setLifetimeCarbonKg(prev => prev + carbonKg);
