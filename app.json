@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sidpid.ecohabit",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Eco Habit uses notifications to remind you of your scheduled eco-friendly habits.",
         "CFBundleDisplayName": "Eco Habit",
@@ -50,7 +50,8 @@
           "color": "#0d3b2e",
           "sounds": []
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
