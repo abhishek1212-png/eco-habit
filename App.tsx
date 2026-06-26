@@ -1446,14 +1446,12 @@ export default function App() {
                   if (!newDeedLabel.trim()) { alert('Enter a deed name'); return; }
                   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
                   const newDeed = { id, label: newDeedLabel.trim(), emoji: newDeedEmoji || '✅' };
-                  setCustomDeeds((d) => {
-                    const updated = [...d, newDeed];
-                    // Save immediately to Firestore
-                    if (firebaseUser) {
-                      setDoc(doc(db, 'eco_users', firebaseUser.uid), { customDeeds: updated }, { merge: true }).catch(() => {});
-                    }
-                    return updated;
-                  });
+                  // Compute updated list outside the updater so Firestore write is a plain side-effect
+                  const updatedDeeds = [...customDeeds, newDeed];
+                  setCustomDeeds(updatedDeeds);
+                  if (firebaseUser) {
+                    setDoc(doc(db, 'eco_users', firebaseUser.uid), { customDeeds: updatedDeeds }, { merge: true }).catch(() => {});
+                  }
                   setSelectedDeed(id);
                   setNewDeedLabel('');
                   setNewDeedEmoji('');
