@@ -2,7 +2,7 @@
   "expo": {
     "name": "Eco Habit",
     "slug": "eco-habit",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sidpid.ecohabit",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Eco Habit uses notifications to remind you of your scheduled eco-friendly habits.",
         "CFBundleDisplayName": "Eco Habit",
