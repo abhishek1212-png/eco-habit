@@ -710,6 +710,12 @@ export default function App() {
     const when = parseTimeToNextDate(timeWithAmpm, dateStr);
     if (!when) return;
     try {
+      // Cancel existing notification for this habit before scheduling a new one
+      // to prevent duplicate alerts accumulating across app opens
+      const existing = notifMap[id];
+      if (existing) {
+        await Notifications.cancelScheduledNotificationAsync(existing).catch(() => {});
+      }
       const identifier = await Notifications.scheduleNotificationAsync({
         content: { title: '🌿 Eco Habit Reminder', body: title, sound: true },
         trigger: { type: 'date', date: when },
@@ -836,7 +842,13 @@ export default function App() {
   };
 
   const clearCompleted = () => {
-    setHabits((s) => s.map((h) => h.completed ? { ...h, completed: false } : h));
+    setHabits((s) => {
+      s.filter(h => h.completed).forEach(h => {
+        const timeOnly = h.time.replace(/^\d{2}-\d{2}\s+/, '');
+        scheduleForHabit(h.id, h.title, timeOnly).catch(() => {});
+      });
+      return s.map((h) => h.completed ? { ...h, completed: false } : h);
+    });
   };
 
   const handleLogin = async () => {
