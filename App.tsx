@@ -632,7 +632,10 @@ export default function App() {
       try {
         const { status } = await Notifications.getPermissionsAsync();
         if (status !== 'granted') {
-          await Notifications.requestPermissionsAsync();
+          const { status: newStatus } = await Notifications.requestPermissionsAsync();
+          if (newStatus !== 'granted') {
+            Alert.alert('Notifications Off', 'Enable notifications in Settings to get habit reminders.');
+          }
         }
       } catch {}
     })();
@@ -708,8 +711,8 @@ export default function App() {
     if (!when) return;
     try {
       const identifier = await Notifications.scheduleNotificationAsync({
-        content: { title: 'Eco Habit Reminder', body: title },
-        trigger: when,
+        content: { title: '🌿 Eco Habit Reminder', body: title, sound: true },
+        trigger: { type: 'date', date: when },
       } as any);
       setNotifMap((m) => ({ ...m, [id]: identifier }));
     } catch {}
