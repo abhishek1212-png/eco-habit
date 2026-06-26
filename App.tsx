@@ -933,7 +933,7 @@ export default function App() {
       const ranked = users
         .sort((a,b) => b.xp - a.xp)
         .slice(0, 50)
-        .map((u, i) => ({ ...u, rank: i+1 }));
+        .map((u, i) => ({ username: u.username, xp: u.xp, streak: u.streak, level: u.level, rank: i+1 }));
       setLeaderboard(ranked);
     } catch {}
     setLbLoading(false);
