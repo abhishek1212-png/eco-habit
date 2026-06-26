@@ -912,10 +912,11 @@ export default function App() {
           const totalXp = data.xp || 0;
           let lvl = 1, acc = 0;
           while (true) { const n = 100+(lvl-1)*20; if (totalXp<acc+n) break; acc+=n; lvl++; }
-          return { username: data.username || '', xp: totalXp, streak: data.globalStreak||0, level: lvl };
+          return { username: data.username || '', xp: totalXp, streak: data.globalStreak||0, level: lvl, consent: data.leaderboardConsent };
         })
         .filter(u => {
           if (!u.username) return false;
+          if (u.consent !== true) return false; // respect "keep me private"
           if (seen.has(u.username)) return false;
           seen.add(u.username);
           return true;
