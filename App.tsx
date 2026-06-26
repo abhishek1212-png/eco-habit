@@ -769,10 +769,11 @@ export default function App() {
       cancelForHabit(id);
       const { today, yesterday: yest } = todayAndYesterday();
       const alreadyDoneToday = h.lastCompletedDate === today;
-      let newXpValue = 0;
+      // Compute new XP up front (don't rely on updater callback — not reliable in Concurrent Mode)
+      const newXpValue = alreadyDoneToday ? xp : xp + XP_PER;
       // Only award XP and carbon if not already completed today (prevents farming)
       if (!alreadyDoneToday) {
-        setXp((v) => { newXpValue = v + XP_PER; return newXpValue; });
+        setXp(newXpValue);
         // Accumulate lifetime carbon (include custom deeds so they get default 300g)
         const allDeeds = [...DEFAULT_DEED_CATEGORIES.flatMap(c => c.deeds), ...customDeeds];
         const deed = allDeeds.find(d => d.label === h.title);
@@ -804,7 +805,7 @@ export default function App() {
       // Global daily streak
       if (lastActivityDate !== today) {
         const newGlobal = lastActivityDate === yest ? globalStreak + 1 : 1;
-        const newXp = newXpValue; // captured from setXp updater above
+        const newXp = newXpValue;
         setGlobalStreak(newGlobal);
         setLastActivityDate(today);
         setStreakBroken(false);
@@ -835,13 +836,12 @@ export default function App() {
   };
 
   const clearCompleted = () => {
-    setHabits((s) => {
-      s.filter(h => h.completed).forEach(h => {
-        const timeOnly = h.time.replace(/^\d{2}-\d{2}\s+/, '');
-        scheduleForHabit(h.id, h.title, timeOnly).catch(() => {});
-      });
-      return s.map((h) => h.completed ? { ...h, completed: false } : h);
+    // reschedule notifications BEFORE updating state (side effects outside updater)
+    habits.filter(h => h.completed).forEach(h => {
+      const timeOnly = h.time.replace(/^\d{2}-\d{2}\s+/, '');
+      scheduleForHabit(h.id, h.title, timeOnly).catch(() => {});
     });
+    setHabits((s) => s.map((h) => h.completed ? { ...h, completed: false } : h));
   };
 
   const handleLogin = async () => {
@@ -1572,7 +1572,9 @@ export default function App() {
           )}
 
           <View style={styles.footer}>
-            <Button title="Clear completed" onPress={clearCompleted} />
+            <TouchableOpacity onPress={clearCompleted} style={{ backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, alignSelf: 'flex-start' }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Clear completed</Text>
+            </TouchableOpacity>
             <Text style={styles.footerNote}>Made by Siddharth</Text>
           </View>
 
